@@ -7,6 +7,7 @@ import argparse
 import json
 import re
 import os
+from utilities import *
 
 
 def get_text_of_speaker_segment(speaker_segment):
@@ -18,14 +19,18 @@ def get_text_of_speaker_segment(speaker_segment):
     print("Cannot find text for speaker segment:", speaker_segment)
 
 
-def clean_transcript(transcript):
+def move_unfinished_sentences(transcript):
     punct_chars = ['.', '!', '?']
     for idx, turn in enumerate(transcript):
+        if len(turn['text']) == 0:
+            continue
         last_char = turn['text'][-1]
         if last_char not in punct_chars: # If last sentence is only a partial sentence
             sentences = re.split(r'(\.|\!|\?)', turn['text'])
             if len(sentences) > 1: # If there's multiple sentences in this turn
                 # Move last partial sentence to next turn's start
+                if idx == len(transcript) - 1:
+                    continue
                 transcript[idx + 1]['text'] = (sentences[-1] + ' ' + transcript[idx + 1]['text']).strip()
                 del sentences[-1]
                 turn['text'] = ''.join(sentences).strip()
@@ -41,6 +46,65 @@ def clean_transcript(transcript):
                 turn['text'] += ' ' + next_turn_first_sentence
                 transcript[idx + 1]['text'] = next_turn_text[(index_of_first_punct + 1):].strip()
     return transcript
+
+
+def split_last_question(text):
+    # breakpoint()
+    last_question_index = -1
+    for idx, char in enumerate(text):
+        if (last_question_index > 0) and (char in ['.', '!']):
+            break
+        if char == '?':
+            last_question_index = idx
+    if last_question_index >= 0: # If question mark found
+        return text[:(last_question_index + 1)].strip(), text[(last_question_index + 1):].strip()
+    else: # If not question mark found
+        return text, ''
+
+
+def split_last_statement(text):
+    last_period_index = -1
+    for idx, char in enumerate(text):
+        if (last_period_index > 0) and (char == '?'):
+            break
+        if char in ['.', '!']:
+            last_period_index = idx
+    if last_period_index >= 0: # If period found
+        return text[:(last_period_index + 1)].strip(), text[(last_period_index + 1):].strip()
+    else: # If not question mark found
+        return text, ''
+
+
+def move_question_responses(transcript):
+    new_transcript = []
+    for turn in transcript:
+        if turn['speaker'] == 'Doctor':
+            current_speaker = 'Doctor'
+            a, b = split_last_question(turn['text'])
+            while b != '':
+                new_transcript.append({
+                    'speaker': current_speaker,
+                    'text': a
+                })
+                if current_speaker == 'Patient':
+                    current_speaker = 'Doctor'
+                else:
+                    current_speaker = 'Patient'
+                if current_speaker == 'Patient':
+                    a, b = split_last_statement(b)
+                else:
+                    a, b = split_last_question(b)
+            new_transcript.append({
+                'speaker': current_speaker,
+                'text': a
+            })
+        else: # If patient
+            if (len(new_transcript) > 0) and (new_transcript[-1]['speaker'] == 'Patient'):
+                new_transcript[-1]['text'] += ' ' + turn['text']
+            else:
+                new_transcript.append(turn)
+    return new_transcript
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -68,10 +132,13 @@ if __name__ == '__main__':
                 'text': text
             })
             last_speaker = speaker
-                
-    transcript = clean_transcript(transcript)
+    
+    transcript = determine_speakers(transcript)
+    transcript = move_unfinished_sentences(transcript)
+    transcript = move_question_responses(transcript)
 
     for turn in transcript:
+        print()
         print("{}: {}".format(turn['speaker'], turn['text']))
 
     with open(args.output, 'w') as outfile:

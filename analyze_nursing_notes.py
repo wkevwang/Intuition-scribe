@@ -18,16 +18,6 @@ categories = [
 ]
 
 
-def match_full_term(term, phrase):
-    term = term.lower()
-    phrase = phrase.lower()
-    if term in phrase:
-        idx = phrase.index(term)
-        if (idx == 0 or (phrase[idx - 1] == ' ')) and ((idx + len(term) == len(phrase)) or phrase[idx + len(term)] == ' '):
-            return True
-    return False
-
-
 def match_regex_full_term(pattern, phrase):
     return re.search("(^| |:|-){}($| |:|-)".format(pattern), phrase, re.IGNORECASE)
 
