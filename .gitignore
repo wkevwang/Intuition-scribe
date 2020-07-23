@@ -10,3 +10,4 @@ snomed_ct/
 transcriptions/
 
 .DS_Store
+*.docx

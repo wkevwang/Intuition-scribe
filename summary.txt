@@ -1,5 +1,9 @@
+CC
+
 Okay, So what brings you in today?
 Um, I've been having pretty bad neck pain.
+
+HPI
 
 So how long's this been going on?
 Probably about two days.
@@ -48,6 +52,8 @@ It feels like it's getting worse but I don't know if that's because the ibuprofe
 And, um, you know, if we need to possibly do some soup Actiq treatments and we'll get on to that later, Okay?
 Okay.
 
+PMH
+
 And, um, as far as your past medical history, have you ever had a neck injury before?
 No.
 
@@ -61,6 +67,8 @@ No.
 Ever had any certain dreams?
 I had my tonsils taken out when I was a kid.
 
+Meds
+
 Do you just take that as needed, huh?
 And you take any other medications I take, um uh, loratadine or Claritin for allergies.
 
@@ -70,10 +78,14 @@ I take a multivitamin.
 And I always like to ask all my patients Any recreational drug use?
 No.
 
+Allergies
+
 And are you allergic to any medication?
 I am.
 
 I'm allergic to penicillin.
+
+FH
 
 Um, any medical conditions in the family with your mom and dad?
 My mom, Uh, she's pretty healthy.
@@ -82,6 +94,8 @@ I have a brother, and he's healthy.
 
 Arthritis?
 No.
+
+SH
 
 And what do you do for a living?
 I'm an administrative assistant.
@@ -103,17 +117,3 @@ I do.
 
 And how long have you been smoking?
 How?
-
-CC
-
-HPI
-
-PMH
-
-Meds
-
-Allergies
-
-FH
-
-SH
