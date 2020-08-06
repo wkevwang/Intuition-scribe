@@ -86,7 +86,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     terms = {}
-    terms_categories = ['disorders', 'events', 'findings', 'procedures', 'products']
+    terms_categories = ['disorders', 'events', 'findings', 'procedures', 'products', 'body_structures']
     for term_category in  terms_categories:
         with open(os.path.join(args.terms_folder, term_category + '_terms.txt'), 'r') as f:
             terms_in_category = [term.strip() for term in f.readlines()]
