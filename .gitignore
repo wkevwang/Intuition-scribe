@@ -8,6 +8,7 @@ __pycache__/
 data/
 snomed_ct/
 transcriptions/
+qa_summary/
 
 .DS_Store
 *.docx

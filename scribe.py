@@ -5,13 +5,21 @@ Parses patient-doctor conversation and generates admission note
 import argparse
 import os
 import json
-import re
+import regex as re
 from colorama import Fore, Style
 from utilities import *
+import snomed
 
 
 def string_to_list_format(text):
-    tokens = re.split(r'( |\.|\,|\!|\?|\;)', text)
+    """
+    Convert text (string) to a list of dicts, with each dict containing the keys:
+        - text: str
+        - index: int
+        - labels: list of dict
+    Each dict's text is a full word, whitespace, or punctuation
+    """
+    tokens = split_on_spaces_and_punctuation(text)
     index = 0
     list_format = []
     for token in tokens:
@@ -21,7 +29,7 @@ def string_to_list_format(text):
             "labels": []
         })
         index += len(token)
-    list_format = [item for item in list_format if item['text'] != '']
+    list_format = [item for item in list_format]
     return list_format
 
 
@@ -49,6 +57,7 @@ default_colour_map = {
     "REGEX_NEGATION": Fore.MAGENTA,
     "REGEX_TIME": Fore.MAGENTA,
 }
+
 
 def list_format_to_coloured_string(list_format, colour_map=default_colour_map):
     string = ""
@@ -85,12 +94,7 @@ if __name__ == "__main__":
     parser.add_argument("--transcript", type=str, required=True)
     args = parser.parse_args()
 
-    terms = {}
-    terms_categories = ['disorders', 'events', 'findings', 'procedures', 'products', 'body_structures']
-    for term_category in  terms_categories:
-        with open(os.path.join(args.terms_folder, term_category + '_terms.txt'), 'r') as f:
-            terms_in_category = [term.strip() for term in f.readlines()]
-        terms[term_category] = terms_in_category
+    terms = snomed.load_snomed_terms(args.terms_folder)
 
     with open(args.transcript, 'r') as f:
         transcript = json.load(f)
@@ -160,7 +164,7 @@ if __name__ == "__main__":
     for turn_idx, turn in enumerate(transcript['transcript']):
         for marker_category, marker_regexes_list in markers.items():
             for marker_regex in marker_regexes_list:
-                matches = list(re.finditer(marker_regex, turn['text'], re.IGNORECASE))
+                matches = list(re.finditer(marker_regex, turn['text'], re.IGNORECASE, overlapped=True))
                 if len(matches) > 0:
                     for match in matches:
                         match_text = match.groups()[0]
@@ -172,10 +176,12 @@ if __name__ == "__main__":
                             "match": match_text,
                             "category": marker_category
                         }
-                        add_label_to_items(turn['list_format'], label, start_index, end_index)
                         # If we found a question, find the response (next non-question statement)
                         if marker_category == "QUESTION":
+                            
                             pass
+                        add_label_to_items(turn['list_format'], label, start_index, end_index)
+
 
     # SNOMED CT
     for turn in transcript['transcript']:

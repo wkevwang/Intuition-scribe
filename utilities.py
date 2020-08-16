@@ -1,4 +1,5 @@
 from datetime import datetime
+import re
 
 def capitalize(text):
     return text[0].upper() + text[1:]
@@ -51,3 +52,12 @@ def determine_speakers(transcript):
     for turn in transcript:
         turn['speaker'] = speaker_map[turn['speaker']]
     return transcript
+
+
+def split_on_spaces_and_punctuation(text):
+    """
+    Split text on spaces and punctuation, keeping the spaces and punctuation.
+    """
+    tokens = re.split(r'( |\.|\,|\!|\?|\;)', text)
+    tokens = [token for token in tokens if token != '']
+    return tokens
