@@ -151,12 +151,7 @@ def list_format_contains_type(list_format, label_type, category=None):
     for token in list_format:
         for label in token['labels']:
             if label['type'] == label_type:
-                if category is None:
-                    return True
-                else:
-                    if label['category'] == category:
-                        return True
-                    else:
-                        return False               
+                if (category is None) or (label['category'] == category):
+                    return True            
     return False
 

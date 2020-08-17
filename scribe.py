@@ -40,60 +40,38 @@ def qa_is_important(question_list_format, response_list_format):
 
 def determine_category_of_qa(question_list_format, response_list_format, first, pmh_mentioned):
     if first:
-        return "Chief Complaint"
+        return CC
     if ((list_format_contains_type(question_list_format, "REGEX", "ALLERGIES_CATEGORY")) or
         (list_format_contains_type(response_list_format, "REGEX", "ALLERGIES_CATEGORY"))):
-        return "Allergies"
+        return ALLERGIES
     if ((list_format_contains_type(question_list_format, "SNOMED_CT", "products")) or
         (list_format_contains_type(response_list_format, "SNOMED_CT", "products"))):
-        return "Medications"
+        return MEDICATIONS
     if ((list_format_contains_type(question_list_format, "REGEX", "FH_CATEGORY")) or
         (list_format_contains_type(response_list_format, "REGEX", "FH_CATEGORY"))):
-        return "Family History"
+        return FH
     if ((list_format_contains_type(question_list_format, "REGEX", "SH_CATEGORY")) or
         (list_format_contains_type(response_list_format, "REGEX", "SH_CATEGORY"))):
-        return "Social History"
+        return SH
     if ((list_format_contains_type(question_list_format, "REGEX", "PSH_CATEGORY")) or
         (list_format_contains_type(response_list_format, "REGEX", "PSH_CATEGORY"))):
-        return "Past Surgical History"
+        return PSH
     if ((list_format_contains_type(question_list_format, "REGEX", "PMH_CATEGORY")) or
         (list_format_contains_type(response_list_format, "REGEX", "PMH_CATEGORY"))):
-        return "Past Medical History"
+        return PMH
     else:
         if pmh_mentioned:
-            return "Past Medical History"
+            return PMH
         else:
-            return "History of Present Illness"
+            return HPI
 
 
 def summarize_qa(question, response):
     return question + " " + response
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--terms_folder", type=str, required=True)
-    parser.add_argument("--transcript", type=str, required=True)
-    parser.add_argument("--print_transcript", action='store_true', required=False)
-    parser.add_argument("--print_qa", action='store_true', required=False)
-    parser.add_argument("--print_summary", action='store_true', required=False)
-    args = parser.parse_args()
-
-    terms = snomed.load_snomed_terms(args.terms_folder)
-
-    with open(args.transcript, 'r') as f:
-        transcript = json.load(f)
-
-    # Add list format info to transcript
-    new_transcript = []
-    for turn in transcript['transcript']:
-        turn['list_format'] = string_to_list_format(turn['text'])
-        new_transcript.append(turn)
-    transcript = new_transcript
-
+def add_regex_labels_to_transcript(transcript):
     label_id = 0
-
-    # REGEX
     for turn_idx, turn in enumerate(transcript):
         for marker_category, marker_regexes_list in REGEX_MARKERS.items():
             for marker_regex in marker_regexes_list:
@@ -132,9 +110,11 @@ if __name__ == "__main__":
                         label_id += 1
                         add_label_to_items(next_turn['list_format'], response_label, 0, len(response_text))
 
-    # SNOMED CT
+
+def add_snomed_labels_to_transcript(transcript, snomed_terms):
+    label_id = 10000
     for turn in transcript:
-        for term_category, terms_list in terms.items():
+        for term_category, terms_list in snomed_terms.items():
             for term in terms_list:
                 if match_full_term(term, turn['text']):
                     label = {
@@ -147,6 +127,31 @@ if __name__ == "__main__":
                     start_index = turn['text'].lower().find(term.lower())
                     end_index = start_index + len(term)
                     add_label_to_items(turn['list_format'], label, start_index, end_index)
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--terms_folder", type=str, required=True)
+    parser.add_argument("--transcript", type=str, required=True)
+    parser.add_argument("--print_transcript", action='store_true', required=False)
+    parser.add_argument("--print_qa", action='store_true', required=False)
+    parser.add_argument("--print_summary", action='store_true', required=False)
+    args = parser.parse_args()
+
+    snomed_terms = snomed.load_snomed_terms(args.terms_folder)
+
+    with open(args.transcript, 'r') as f:
+        transcript = json.load(f)
+
+    # Add list format info to transcript
+    new_transcript = []
+    for turn in transcript['transcript']:
+        turn['list_format'] = string_to_list_format(turn['text'])
+        new_transcript.append(turn)
+    transcript = new_transcript
+
+    add_regex_labels_to_transcript(transcript)
+    add_snomed_labels_to_transcript(transcript, snomed_terms)
 
     # Print labelled transcript
     if args.print_transcript:
@@ -179,7 +184,7 @@ if __name__ == "__main__":
                 })
                 note[category].append(qa_summary)
                 first = False
-                if category == "Past Medical History":
+                if category == PMH:
                     pmh_mentioned = True
             if args.print_qa:
                 print("Question: {}".format(question))
