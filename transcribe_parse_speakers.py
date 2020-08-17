@@ -5,7 +5,7 @@ a transcript with individual speakers.
 
 import argparse
 import json
-import re
+import regex as re
 import os
 from utilities import *
 

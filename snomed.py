@@ -5,7 +5,7 @@ Generates keywords list from SNOMED CT files
 import argparse
 import pandas as pd
 import os
-import re
+import regex as re
 from utilities import *
 
 

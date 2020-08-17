@@ -163,9 +163,17 @@ def test_add_label_to_items_1():
     assert len(list_format[9]['labels']) == 0
 
 
-def test_find_response_to_question_1():
+def test_find_first_sentence_response_to_question():
     next_turn = {
         "text": "Yes, it's me. That's me."
     }
-    response_match = find_response_to_question(next_turn)
+    response_match = find_first_sentence_response_to_question(next_turn)
     assert response_match.group() == "Yes, it's me."
+
+
+def test_slice_list_format():
+    string = "Hello world, hi? There."
+    list_format = string_to_list_format(string)
+    sliced_list_format = slice_list_format(list_format, 13, 16)
+    assert sliced_list_format[0]['text'] == 'hi'
+    assert sliced_list_format[1]['text'] == '?'

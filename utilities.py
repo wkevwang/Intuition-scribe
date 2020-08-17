@@ -1,8 +1,13 @@
 from datetime import datetime
-import re
+import regex as re
+import pprint
+from colorama import Fore, Style
+from constants import *
+
 
 def capitalize(text):
     return text[0].upper() + text[1:]
+
 
 def to_date(string):
     """
@@ -24,6 +29,7 @@ def to_date(string):
         # Not a date
         pass
     return date
+
 
 def match_full_term(term, phrase):
     """
@@ -61,3 +67,96 @@ def split_on_spaces_and_punctuation(text):
     tokens = re.split(r'( |\.|\,|\!|\?|\;)', text)
     tokens = [token for token in tokens if token != '']
     return tokens
+
+
+pp = pprint.PrettyPrinter(indent=4)
+def prprint(data):
+    pp.pprint(data)
+
+
+def string_to_list_format(text):
+    """
+    Convert text (string) to a list of dicts, with each dict containing the keys:
+        - text: str
+        - index: int
+        - labels: list of dict
+    Each dict's text is a full word, whitespace, or punctuation
+    """
+    tokens = split_on_spaces_and_punctuation(text)
+    index = 0
+    list_format = []
+    for token in tokens:
+        list_format.append({
+            "text": token,
+            "index": index,
+            "labels": []
+        })
+        index += len(token)
+    list_format = [item for item in list_format]
+    return list_format
+
+
+def list_format_to_string(list_format):
+    string = ""
+    for item in list_format:
+        string += item['text']
+    return string
+
+
+def slice_list_format(list_format, start_index, end_index):
+    sliced_list_format = []
+    for token in list_format:
+        if start_index <= token['index'] < end_index:
+            sliced_list_format.append(token)
+    return sliced_list_format
+
+
+def list_format_to_coloured_string(list_format, colour_map=COLOUR_MAP):
+    string = ""
+    for item in list_format:
+        if len(item['labels']) > 0:
+            last_label = item['labels'][-1]
+            type_str = last_label['type']
+            if type_str == 'REGEX':
+                type_str += '_' + last_label['category']
+            colour = colour_map.get(type_str, Fore.CYAN)
+            string += colour
+        else:
+            string += Style.RESET_ALL
+        string += item['text']
+    string += Style.RESET_ALL
+    return string
+
+
+def add_label_to_items(list_format, label, start_index, end_index):
+    if start_index < 0:
+        raise ValueError("Start index < 0 in add_label_to_items!")
+    for item in list_format:
+        if start_index <= item['index'] < end_index:
+            item['labels'].append(label)
+    return list_format
+
+
+def find_list_format_slice_with_label_id(transcript, label_id):
+    sliced_list_format = []
+    for turn in transcript:
+        for token in turn['list_format']:
+            for label in token['labels']:
+                if label['label_id'] == label_id:
+                    sliced_list_format.append(token)
+    return sliced_list_format
+
+
+def list_format_contains_type(list_format, label_type, category=None):
+    for token in list_format:
+        for label in token['labels']:
+            if label['type'] == label_type:
+                if category is None:
+                    return True
+                else:
+                    if label['category'] == category:
+                        return True
+                    else:
+                        return False               
+    return False
+
