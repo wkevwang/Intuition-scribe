@@ -7,6 +7,9 @@ import pandas as pd
 import os
 from keywords import keywords
 import regex as re
+import sys
+
+sys.path.append('..')
 from utilities import *
 
 categories = [
