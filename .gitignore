@@ -6,7 +6,7 @@ __pycache__/
 .vscode/
 
 data/
-snomed_ct/
+snomed_ct/*.txt
 transcriptions/
 qa_summary/
 

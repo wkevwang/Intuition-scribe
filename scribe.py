@@ -6,10 +6,12 @@ import argparse
 import os
 import json
 import regex as re
+from collections import OrderedDict
+import random
+
 from utilities import *
 from constants import *
 import snomed
-from collections import OrderedDict
 
 
 def find_first_sentence_response_to_question(next_turn, start_index=0):
@@ -67,7 +69,13 @@ def determine_category_of_qa(question_list_format, response_list_format, first, 
 
 
 def summarize_qa(question, response):
-    return question + " " + response
+    import generate_summary
+    print("Summarizing Q:'{}' A:'{}'".format(question, response))
+    summaries_batch = generate_summary.summarize(question, response, max_batches=3)
+    for summary in summaries_batch:
+        if summary['summary_valid']:
+            return summary['summary']
+    return "[Q: {} A: {}]".format(question, response)
 
 
 def add_regex_labels_to_transcript(transcript):
@@ -138,6 +146,7 @@ if __name__ == "__main__":
     parser.add_argument("--print_summary", action='store_true', required=False)
     args = parser.parse_args()
 
+    print("Loading SNOMED terms...")
     snomed_terms = snomed.load_snomed_terms(args.terms_folder)
 
     with open(args.transcript, 'r') as f:
@@ -150,7 +159,9 @@ if __name__ == "__main__":
         new_transcript.append(turn)
     transcript = new_transcript
 
+    print("Finding phrases with regex...")
     add_regex_labels_to_transcript(transcript)
+    print("Finding phrases with SNOMED vocabulary...")
     add_snomed_labels_to_transcript(transcript, snomed_terms)
 
     # Print labelled transcript
@@ -164,6 +175,7 @@ if __name__ == "__main__":
     note = {category: [] for category in CATEGORIES}
 
     # Build Q&A pairs
+    print("Building summary...")
     qa_summaries = []
     first = True
     pmh_mentioned = False

@@ -8,14 +8,13 @@ import sys
 from nltk.stem import WordNetLemmatizer
 from nltk.stem.snowball import SnowballStemmer
 from nltk.stem.porter import *
+import model, sample, encoder
+import tensorflow as tf
 
 sys.path.append('..')
 import snomed
 from utilities import *
 
-if __name__ == "__main__":
-    import model, sample, encoder
-    import tensorflow as tf
 
 context_text = """Question: So how long's the pain been going on?
 Answer: Probably about two days.
@@ -106,9 +105,12 @@ def clean_word(word):
 allowed_words = [
     "to", "the", "a", "it", "and", "patient", "says", "had", "in", "his",
     "her", "he", "she", '.', 'as', ',', 'start', 'at', 'while', 'was', "began",
-    "noticing", "does", "not", "saw", "that", "patient's", "doesn't"]
+    "noticing", "does", "not", "saw", "that", "patient's", "doesn't"
+]
 allowed_words = [clean_word(word) for word in allowed_words]
-not_allowed_words = ["I", "my", "?", "!", "your"]
+not_allowed_words = [
+    "I", "my", "?", "!", "your", '..', "I'll",
+]
 not_allowed_words = [clean_word(word) for word in not_allowed_words]
 
 def check_summary(terms, question, answer, summary):
@@ -141,74 +143,93 @@ def check_summary(terms, question, answer, summary):
     return True, "Passed"
 
 
+def summarize(question, answer, max_batches=1):
+    summaries_batch = []
+    context_tokens = enc.encode("{}Question: {}\nAnswer: {}\nSummary: ".format(context_text, question, answer))
+    for batch_idx in range(max_batches):
+        print("Batch {} of {}...".format(batch_idx + 1, max_batches))
+        out = sess.run(output, feed_dict={
+            context: [context_tokens for _ in range(args.batch_size)]
+        })[:, len(context_tokens):]
+        for i in range(args.batch_size):
+            text = enc.decode(out[i])
+            text = text.replace(u'\xa0', '') # Remove non-breaking space which, for some reason, is at the beginning of text
+            summary = text.split('\n')[0]
+            summary_valid, reason = check_summary(snomed_terms, question, answer, summary)
+            summaries_batch.append({
+                "summary": summary,
+                "summary_valid": summary_valid,
+                "reason": reason,
+            })
+            if summary_valid:
+                return summaries_batch
+    return summaries_batch
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--model_name", default="774M", type=str, required=False)
+parser.add_argument("--length", default=30, type=int, required=False)
+parser.add_argument("--batch_size", default=10, type=int, required=False)
+parser.add_argument("--terms_folder", default='terms', type=str, required=False)
+parser.add_argument("--print_all", default=False, action='store_true', required=False)
+parser.add_argument("--temperature", default=1.0, type=float, required=False)
+parser.add_argument("--top_k", default=40, type=int, required=False)
+parser.add_argument("--top_p", default=1.0, type=float, required=False)
+parser.add_argument("--seed", default=None, type=int, required=False)
+parser.add_argument("--max_batches_per_qa", default=5, type=int, required=False)
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--model_name", default="774M", type=str, required=False)
-    parser.add_argument("--length", default=50, type=int, required=False)
-    parser.add_argument("--batch_size", default=1, type=int, required=False)
-    parser.add_argument("--terms_folder", default='terms', type=str, required=False)
-    parser.add_argument("--print_all", default=False, action='store_true', required=False)
-    parser.add_argument("--temperature", default=1.0, type=float, required=False)
-    parser.add_argument("--top_k", default=40, type=int, required=False)
-    parser.add_argument("--top_p", default=1.0, type=float, required=False)
-    parser.add_argument("--seed", default=None, type=int, required=False)
     args = parser.parse_args()
+else:
+    args = parser.parse_args([])
 
-    models_dir = 'models'
+models_dir = 'models'
+models_dir = os.path.expanduser(os.path.expandvars(models_dir))
+snomed_terms = snomed.load_snomed_terms(args.terms_folder)
 
-    models_dir = os.path.expanduser(os.path.expandvars(models_dir))
+enc = encoder.get_encoder(args.model_name, models_dir)
+hparams = model.default_hparams()
+with open(os.path.join(models_dir, args.model_name, 'hparams.json')) as f:
+    hparams.override_from_dict(json.load(f))
 
-    snomed_terms = snomed.load_snomed_terms(args.terms_folder)
+tf.compat.v1.disable_eager_execution()
+sess = tf.Session()
+context = tf.placeholder(tf.int32, [args.batch_size, None])
+np.random.seed(args.seed)
+tf.set_random_seed(args.seed)
+output = sample.sample_sequence(
+    hparams=hparams, length=args.length,
+    context=context,
+    batch_size=args.batch_size,
+    temperature=args.temperature, top_k=args.top_k, top_p=args.top_p
+)
 
-    enc = encoder.get_encoder(args.model_name, models_dir)
-    hparams = model.default_hparams()
-    with open(os.path.join(models_dir, args.model_name, 'hparams.json')) as f:
-        hparams.override_from_dict(json.load(f))
+saver = tf.train.Saver()
+ckpt = tf.train.latest_checkpoint(os.path.join(models_dir, args.model_name))
+saver.restore(sess, ckpt)
 
-    with tf.Session(graph=tf.Graph()) as sess:
-        context = tf.placeholder(tf.int32, [args.batch_size, None])
-        np.random.seed(args.seed)
-        tf.set_random_seed(args.seed)
-        output = sample.sample_sequence(
-            hparams=hparams, length=args.length,
-            context=context,
-            batch_size=args.batch_size,
-            temperature=args.temperature, top_k=args.top_k, top_p=args.top_p
-        )
+if __name__ == "__main__":
+    while True:
+        question = input("Question: ")
+        answer = input("Answer: ")
+        valid_summary_found = False
+        attempts = 0
 
-        saver = tf.train.Saver()
-        ckpt = tf.train.latest_checkpoint(os.path.join(models_dir, args.model_name))
-        saver.restore(sess, ckpt)
-
-        while True:
-            question = input("Question: ")
-            answer = input("Answer: ")
-            valid_summary_found = False
-            attempts = 0
-
-            while not valid_summary_found and attempts < 10:
-                context_tokens = enc.encode("{}Question: {}\nAnswer: {}\nSummary: ".format(context_text, question, answer))
-                out = sess.run(output, feed_dict={
-                    context: [context_tokens for _ in range(args.batch_size)]
-                })[:, len(context_tokens):]
-
-                for i in range(args.batch_size):
-                    text = enc.decode(out[i])
-                    text = text.replace(u'\xa0', '') # Remove non-breaking space which, for some reason, is at the beginning of text
-                    summary = text.split('\n')[0]
-                    summary_valid, reason = check_summary(snomed_terms, question, answer, summary)
-                    if args.print_all:
-                        print("Summary: {} | Passed check: {} ({})".format(summary, summary_valid, reason))
-                        print("---------------------------")
-                        if summary_valid:
-                            break
-                    elif summary_valid:
-                        valid_summary_found = True
-                        print("Summary: {}".format(summary))
-                        print("---------------------------")
+        while not valid_summary_found and attempts < args.max_batches_per_qa:
+            summaries_batch = summarize(question, answer)
+            for summary in summaries_batch:
+                summary_text = summary['summary']
+                summary_valid = summary['summary_valid']
+                reason = summary['reason']
+                if args.print_all:
+                    print("Summary: {} | Passed check: {} ({})".format(summary_text, summary_valid, reason))
+                    print("---------------------------")
+                    if summary_valid:
                         break
-                
-                if summary_valid:
+                elif summary_valid:
+                    valid_summary_found = True
+                    print("Summary: {}".format(summary_text))
+                    print("---------------------------")
                     break
-                attempts += 1
-                print("Attempts: {} ...".format(attempts))
+                    if summary_valid:
+                        break
+
