@@ -6,6 +6,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--path", type=str, required=True)
 parser.add_argument("--type", type=str, default='medical', required=False)
 parser.add_argument("--lang", type=str, default='en-US', required=False)
+parser.add_argument("--speakers", type=int, default=2, required=False)
 args = parser.parse_args()
 
 client = boto3.client('transcribe')
@@ -21,7 +22,7 @@ if args.type == 'medical':
         OutputBucketName="emr-storage-100",
         Settings={
             'ShowSpeakerLabels': True,
-            'MaxSpeakerLabels': 2,
+            'MaxSpeakerLabels': args.speakers,
             'ShowAlternatives': True,
             'MaxAlternatives': 2,
         },
@@ -39,7 +40,7 @@ else:
         OutputBucketName="emr-storage-100",
         Settings={
             'ShowSpeakerLabels': True,
-            'MaxSpeakerLabels': 2,
+            'MaxSpeakerLabels': args.speakers,
             'ShowAlternatives': True,
             'MaxAlternatives': 2,
         },

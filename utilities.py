@@ -1,8 +1,11 @@
+import sys
 from datetime import datetime
 import regex as re
 import pprint
+from colr import color
 from colorama import Fore, Style
 from constants import *
+
 
 
 def capitalize(text):
@@ -48,18 +51,6 @@ def match_full_term(term, phrase):
     return False
 
 
-def determine_speakers(transcript):
-    num_question_marks_spk_0 = sum(turn['text'].count('?') for turn in transcript if turn['speaker'] == 'spk_0')
-    num_question_marks_spk_1 = sum(turn['text'].count('?') for turn in transcript if turn['speaker'] == 'spk_1')
-    speaker_map = {
-        "spk_0": "Doctor" if num_question_marks_spk_0 > num_question_marks_spk_1 else "Patient",
-        "spk_1": "Doctor" if num_question_marks_spk_1 > num_question_marks_spk_0 else "Patient",
-    }
-    for turn in transcript:
-        turn['speaker'] = speaker_map[turn['speaker']]
-    return transcript
-
-
 def split_on_spaces_and_punctuation(text):
     """
     Split text on spaces and punctuation, keeping the spaces and punctuation.
@@ -70,7 +61,7 @@ def split_on_spaces_and_punctuation(text):
 
 
 pp = pprint.PrettyPrinter(indent=4)
-def prprint(data):
+def prp(data):
     pp.pprint(data)
 
 
@@ -155,3 +146,17 @@ def list_format_contains_type(list_format, label_type, category=None):
                     return True            
     return False
 
+def print_conf(text, confidence, newline=True):
+    red_255 = min(max(0, (confidence * 510) - 255), 255)
+    red_hex = hex(int(red_255)).lstrip("0x")
+    if red_hex == '':
+        red_hex = '00'
+    if len(red_hex) == 1:
+        red_hex = '0' + red_hex
+    if text in [',', '.', '!', '?']:
+        sys.stdout.write('\b')
+        print(color(text, fore='ffffff', back='000'), end=' ')
+    else:
+        print(color(text, fore='ff' + red_hex + red_hex, back='000'), end=' ')
+    if newline:
+        print()

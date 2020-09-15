@@ -12,3 +12,5 @@ qa_summary/
 
 .DS_Store
 *.docx
+
+*.pt

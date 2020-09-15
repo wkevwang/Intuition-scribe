@@ -7,16 +7,30 @@ import argparse
 import json
 import regex as re
 import os
+import copy
+
 from utilities import *
 
 
-def get_text_of_speaker_segment(speaker_segment):
+def get_text_of_speaker_segment(speaker_segment, segments):
     for segment in segments:
         if ((segment['start_time'] == speaker_segment['start_time']) and
             (segment['end_time'] == speaker_segment['end_time'])):
             if len(segment['alternatives']) > 0:
-                return segment['alternatives'][0]['transcript']
+                return segment['alternatives'][0]['transcript'], segment['alternatives'][0]['items']
     print("Cannot find text for speaker segment:", speaker_segment)
+
+
+def determine_speakers(transcript):
+    num_question_marks_spk_0 = sum(turn['text'].count('?') for turn in transcript if turn['speaker'] == 'spk_0')
+    num_question_marks_spk_1 = sum(turn['text'].count('?') for turn in transcript if turn['speaker'] == 'spk_1')
+    speaker_map = {
+        "spk_0": "Doctor" if num_question_marks_spk_0 > num_question_marks_spk_1 else "Patient",
+        "spk_1": "Doctor" if num_question_marks_spk_1 > num_question_marks_spk_0 else "Patient",
+    }
+    for turn in transcript:
+        turn['speaker'] = speaker_map[turn['speaker']]
+    return transcript
 
 
 def move_unfinished_sentences(transcript):
@@ -49,7 +63,6 @@ def move_unfinished_sentences(transcript):
 
 
 def split_last_question(text):
-    # breakpoint()
     last_question_index = -1
     for idx, char in enumerate(text):
         if (last_question_index > 0) and (char in ['.', '!']):
@@ -122,24 +135,37 @@ if __name__ == '__main__':
     last_speaker = None
 
     for speaker_segment in speaker_segments:
-        text = get_text_of_speaker_segment(speaker_segment)
+        text, items = get_text_of_speaker_segment(speaker_segment, segments)
         speaker = speaker_segment['speaker_label']
         if last_speaker == speaker:
             transcript[-1]['text'] += ' ' + text
+            transcript[-1]['items'] += items
         else:
             transcript.append({
                 'speaker': speaker,
-                'text': text
+                'text': text,
+                'items': items,
             })
             last_speaker = speaker
     
+    original_transcript = copy.copy(transcript)
     transcript = determine_speakers(transcript)
     transcript = move_unfinished_sentences(transcript)
-    transcript = move_question_responses(transcript)
+    # transcript = move_question_responses(transcript)
 
+    print("CLEANED TRANSCRIPT")
     for turn in transcript:
         print()
         print("{}: {}".format(turn['speaker'], turn['text']))
+
+    print()
+    print("ORIGINAL TRANSCRIPT WITH PROBABILITIES")
+    for turn in original_transcript:
+        print("{}: ".format(turn['speaker']), end='')
+        for item in turn['items']:
+            print_conf(item['content'], float(item['confidence']), newline=False)
+        print()
+        print()
 
     with open(args.output, 'w') as outfile:
         json.dump({
