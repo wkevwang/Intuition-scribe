@@ -100,3 +100,11 @@ if __name__ == '__main__':
             print_conf(item['content'], float(confidence), newline=False)
         print()
         print()
+    
+    filename_prefix = os.path.splitext(os.path.basename(args.transcript_file))[0]
+    filename = filename_prefix + '_rev_transcript.json'
+    transcript_json = {
+        'transcript': transcript
+    }
+    with open(os.path.join(args.output_folder, filename), 'w') as f:
+        json.dump(transcript_json, f, indent=4)
