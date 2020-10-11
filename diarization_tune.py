@@ -3,7 +3,7 @@ Parameter sweep over
 * audio_embed_rates
 * speaker_embed_rates
 * partials_n_frames_list
-to find the highest diarization word accuracy.
+to find the highest diarization word-level accuracy.
 """
 
 import argparse

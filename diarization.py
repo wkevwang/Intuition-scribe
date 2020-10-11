@@ -44,8 +44,8 @@ def samples_between_preidctions(args):
     return int(np.round((sampling_rate / rate) / samples_per_frame))
 
 
-def print_predictions(speaker_predictions, wav_splits, similarity_matrix, args, freq=2):
-    interval = int(args.audio_embed_rate / freq)
+def print_predictions(speaker_predictions, wav_splits, similarity_matrix, audio_embed_rate, freq=2):
+    interval = int(audio_embed_rate / freq)
     for i in range(0, len(speaker_predictions), interval):
         midpoint_offset = (wav_splits[i].stop - wav_splits[i].start) / sampling_rate / 2
         seconds = (wav_splits[i].start / sampling_rate) + midpoint_offset
@@ -54,7 +54,7 @@ def print_predictions(speaker_predictions, wav_splits, similarity_matrix, args, 
             speaker_predictions[i], similarity_matrix[0, i]))
 
 
-def format_diarization(speaker_predictions, wav_splits, args):
+def format_diarization(speaker_predictions, wav_splits):
     diarization = []
     for i in range(len(speaker_predictions)):
         midpoint_offset = (wav_splits[i].stop - wav_splits[i].start) / sampling_rate / 2
@@ -67,10 +67,10 @@ def format_diarization(speaker_predictions, wav_splits, args):
     return diarization
 
 
-def write_json(diarization):
-    filename_prefix = os.path.splitext(os.path.basename(args.audio_file))[0]
-    json_filename = filename_prefix + '-diarization.json'
-    with open(json_filename, 'w') as f:
+def write_json(diarization, output_folder, audio_file):
+    filename_prefix = os.path.splitext(os.path.basename(audio_file))[0]
+    json_filename = filename_prefix + '_diarization.json'
+    with open(os.path.join(output_folder, json_filename), 'w') as f:
         json.dump({"diarization": diarization}, f, indent=4)
 
 
@@ -114,6 +114,7 @@ if __name__ == "__main__":
     parser.add_argument("--audio_embed_rate", type=int, default=16, required=False)
     parser.add_argument("--speaker_embed_rate", type=int, default=16, required=False)
     parser.add_argument("--model_file", type=str, default="pretrained.pt", required=False)
+    parser.add_argument("--output_folder", type=str, default=".", required=False)
     args = parser.parse_args()
 
     wav = preprocess_wav(args.audio_file)
@@ -124,8 +125,8 @@ if __name__ == "__main__":
         args.doctor_segments, args.patient_segments)
 
     # Print predictions
-    print_predictions(speaker_predictions, wav_splits, similarity_matrix, args)
+    print_predictions(speaker_predictions, wav_splits, similarity_matrix, args.audio_embed_rate)
 
     # Produce output JSON data
-    diarization = format_diarization(speaker_predictions, wav_splits, args)
-    write_json(diarization)
+    diarization = format_diarization(speaker_predictions, wav_splits)
+    write_json(diarization, args.output_folder, args.audio_file)

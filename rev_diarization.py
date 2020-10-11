@@ -67,6 +67,7 @@ if __name__ == '__main__':
     parser.add_argument("--diarization_file", type=str, required=True)
     parser.add_argument("--output_folder", type=str, required=True)
     parser.add_argument("--diarization_offset", required=False, type=float, default=0.0)
+    parser.add_argument("--print_transcript", required=False, action='store_true', default=False)
     args = parser.parse_args()
 
     with open(args.transcript_file, 'r') as f:
@@ -104,20 +105,18 @@ if __name__ == '__main__':
             })
             last_speaker = speaker
 
-    print()
-    print("TRANSCRIPT WITH PROBABILITIES")
-    for turn in transcript:
-        print("{}: ".format(turn['speaker']), end='')
-        for item in turn['items']:
-            confidence = item.get('confidence', 0)
-            print_conf(item['content'], float(confidence), newline=False)
+    if args.print_transcript:
         print()
-        print()
+        print("TRANSCRIPT WITH PROBABILITIES")
+        for turn in transcript:
+            print("{}: ".format(turn['speaker']), end='')
+            for item in turn['items']:
+                confidence = item.get('confidence', 0)
+                print_conf(item['content'], float(confidence), newline=False)
+            print()
+            print()
     
     filename_prefix = os.path.splitext(os.path.basename(args.transcript_file))[0]
     filename = filename_prefix + '_rev_transcript.json'
-    transcript_json = {
-        'transcript': transcript
-    }
     with open(os.path.join(args.output_folder, filename), 'w') as f:
-        json.dump(transcript_json, f, indent=4)
+        json.dump({'transcript': transcript}, f, indent=4)

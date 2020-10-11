@@ -160,3 +160,14 @@ def print_conf(text, confidence, newline=True):
         print(color(text, fore='ff' + red_hex + red_hex, back='000'), end=' ')
     if newline:
         print()
+
+
+def format_command(string):
+    elements = string.split()
+    print()
+    for e in elements:
+        if e.startswith('--'):
+            print('\\')
+        print(e, end=' ')
+    print()
+    print()
