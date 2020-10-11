@@ -44,7 +44,7 @@ def samples_between_preidctions(args):
     return int(np.round((sampling_rate / rate) / samples_per_frame))
 
 
-def print_predictions(speaker_predictions, wav_splits, args, freq=2):
+def print_predictions(speaker_predictions, wav_splits, similarity_matrix, args, freq=2):
     interval = int(args.audio_embed_rate / freq)
     for i in range(0, len(speaker_predictions), interval):
         midpoint_offset = (wav_splits[i].stop - wav_splits[i].start) / sampling_rate / 2
@@ -54,7 +54,7 @@ def print_predictions(speaker_predictions, wav_splits, args, freq=2):
             speaker_predictions[i], similarity_matrix[0, i]))
 
 
-def output_json(speaker_predictions, wav_splits, args):
+def format_diarization(speaker_predictions, wav_splits, args):
     diarization = []
     for i in range(len(speaker_predictions)):
         midpoint_offset = (wav_splits[i].stop - wav_splits[i].start) / sampling_rate / 2
@@ -64,12 +64,46 @@ def output_json(speaker_predictions, wav_splits, args):
             "time": round(seconds, 2),
             "speaker": speaker_prediction
         })
+    return diarization
 
+
+def write_json(diarization):
     filename_prefix = os.path.splitext(os.path.basename(args.audio_file))[0]
     json_filename = filename_prefix + '-diarization.json'
     with open(json_filename, 'w') as f:
         json.dump({"diarization": diarization}, f, indent=4)
 
+
+def compute_diarization(wav, encoder, partials_n_frames, speaker_embed_rate,
+                        audio_embed_rate, doctor_segments, patient_segments):
+    # Set partials_n_frames (number of frames region per prediction)
+    resemblyzer.voice_encoder.partials_n_frames = partials_n_frames
+
+    # Cut some segments from each speaker as reference audio
+    num_doctor_segments = len(doctor_segments)
+    num_patient_segments = len(patient_segments)
+    doctor_segments = [[float(time.split('-')[0]), float(time.split('-')[1])]
+                        for time in doctor_segments]
+    patient_segments = [[float(time.split('-')[0]), float(time.split('-')[1])]
+                        for time in patient_segments]
+    segments = doctor_segments + patient_segments
+    speaker_names = (["Doctor"] * num_doctor_segments) + (["Patient"] * num_patient_segments)
+    speaker_wavs = [wav[int(s[0] * sampling_rate):int(s[1]) * sampling_rate] for s in segments]
+
+    # Encode the audio
+    print("Encode the audio...")
+    _, cont_embeds, wav_splits = encoder.embed_utterance(wav, return_partials=True, rate=audio_embed_rate)
+    speaker_embeds = [encoder.embed_utterance(speaker_wav, rate=speaker_embed_rate) for speaker_wav in speaker_wavs]
+
+    # Determine who spoke when
+    similarity_dict = {name: cont_embeds @ speaker_embed for name, speaker_embed in 
+                       zip(speaker_names, speaker_embeds)}
+    similarity_matrix = np.array([cont_embeds @ speaker_embed for name, speaker_embed in
+                                zip(speaker_names, speaker_embeds)])
+    speaker_predictions_indexes = np.argmax(similarity_matrix, axis=0)
+    speaker_predictions = [speaker_names[index] for index in speaker_predictions_indexes]
+
+    return speaker_predictions, similarity_matrix, wav_splits
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -82,37 +116,16 @@ if __name__ == "__main__":
     parser.add_argument("--model_file", type=str, default="pretrained.pt", required=False)
     args = parser.parse_args()
 
-    # Set partials_n_frames (number of frames region per prediction)
-    resemblyzer.voice_encoder.partials_n_frames = args.partials_n_frames
     wav = preprocess_wav(args.audio_file)
-
-    # Cut some segments from each speaker as reference audio
-    num_doctor_segments = len(args.doctor_segments)
-    num_patient_segments = len(args.patient_segments)
-    doctor_segments = [[float(time.split('-')[0]), float(time.split('-')[1])]
-                        for time in args.doctor_segments]
-    patient_segments = [[float(time.split('-')[0]), float(time.split('-')[1])]
-                        for time in args.patient_segments]
-    segments = doctor_segments + patient_segments
-    speaker_names = (["Doctor"] * num_doctor_segments) + (["Patient"] * num_patient_segments)
-    speaker_wavs = [wav[int(s[0] * sampling_rate):int(s[1]) * sampling_rate] for s in segments]
-
-    # Encode the audio
-    print("Encode the audio...")
     encoder = VoiceEncoder("cpu", model_file=args.model_file)
-    _, cont_embeds, wav_splits = encoder.embed_utterance(wav, return_partials=True, rate=args.audio_embed_rate)
-    speaker_embeds = [encoder.embed_utterance(speaker_wav, rate=args.speaker_embed_rate) for speaker_wav in speaker_wavs]
 
-    # Determine who spoke when
-    similarity_dict = {name: cont_embeds @ speaker_embed for name, speaker_embed in 
-                       zip(speaker_names, speaker_embeds)}
-    similarity_matrix = np.array([cont_embeds @ speaker_embed for name, speaker_embed in
-                                zip(speaker_names, speaker_embeds)])
-    speaker_predictions_indexes = np.argmax(similarity_matrix, axis=0)
-    speaker_predictions = [speaker_names[index] for index in speaker_predictions_indexes]
-    
+    speaker_predictions, similarity_matrix, wav_splits = compute_diarization(
+        wav, encoder, args.partials_n_frames, args.speaker_embed_rate, args.audio_embed_rate,
+        args.doctor_segments, args.patient_segments)
+
     # Print predictions
-    print_predictions(speaker_predictions, wav_splits, args)
-    
+    print_predictions(speaker_predictions, wav_splits, similarity_matrix, args)
+
     # Produce output JSON data
-    output_json(speaker_predictions, wav_splits, args)
+    diarization = format_diarization(speaker_predictions, wav_splits, args)
+    write_json(diarization)
