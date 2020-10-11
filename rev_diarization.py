@@ -117,6 +117,6 @@ if __name__ == '__main__':
             print()
     
     filename_prefix = os.path.splitext(os.path.basename(args.transcript_file))[0]
-    filename = filename_prefix + '_rev_transcript.json'
+    filename = filename_prefix + '_rev_transcript_diarized.json'
     with open(os.path.join(args.output_folder, filename), 'w') as f:
         json.dump({'transcript': transcript}, f, indent=4)
