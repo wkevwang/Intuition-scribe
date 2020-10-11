@@ -5,6 +5,7 @@ __pycache__/
 .pytest_cache/
 .vscode/
 
+audio/
 data/
 snomed_ct/*.txt
 transcriptions/
@@ -12,3 +13,4 @@ qa_summary/
 
 .DS_Store
 *.docx
+*.json

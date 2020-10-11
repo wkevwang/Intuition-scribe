@@ -9,7 +9,7 @@ import torch
 
 
 class VoiceEncoder(nn.Module):
-    def __init__(self, device: Union[str, torch.device]=None, verbose=True):
+    def __init__(self, device: Union[str, torch.device]=None, verbose=True, model_file="pretrained.pt"):
         """
         :param device: either a torch device or the name of a torch device (e.g. "cpu", "cuda"). 
         If None, defaults to cuda if it is available on your machine, otherwise the model will 
@@ -30,7 +30,7 @@ class VoiceEncoder(nn.Module):
         self.device = device
             
         # Load the pretrained model'speaker weights
-        weights_fpath = Path(__file__).resolve().parent.joinpath("pretrained.pt")
+        weights_fpath = Path(__file__).resolve().parent.joinpath(model_file)
         if not weights_fpath.exists():
             raise Exception("Couldn't find the voice encoder pretrained model at %s." % 
                             weights_fpath)
@@ -92,7 +92,7 @@ class VoiceEncoder(nn.Module):
         assert 0 < frame_step, "The rate is too high"
         assert frame_step <= partials_n_frames, "The rate is too low, it should be %f at least" % \
             (sampling_rate / (samples_per_frame * partials_n_frames))
-        
+
         # Compute the slices
         wav_slices, mel_slices = [], []
         steps = max(1, n_frames - partials_n_frames + frame_step + 1)

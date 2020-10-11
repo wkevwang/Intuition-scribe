@@ -17,22 +17,7 @@ def all_dict_values_same(d):
     return (len(set(d.values())) == 1)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--transcript_file", type=str, required=True)
-    parser.add_argument("--diarization_file", type=str, required=True)
-    parser.add_argument("--output_folder", type=str, required=True)
-    parser.add_argument("--diarization_offset", required=False, type=float, default=0.0)
-    args = parser.parse_args()
-
-    with open(args.transcript_file, 'r') as f:
-        transcript_file = json.load(f)
-
-    with open(args.diarization_file, 'r') as f:
-        diarization_file = json.load(f)
-
-    transcript = []
-
+def parse_transcript_elements(transcript_file):
     transcript_monologues = transcript_file["monologues"]
     transcript_elements_lists = [m["elements"] for m in transcript_monologues]
     transcript_elements = []
@@ -41,7 +26,10 @@ if __name__ == '__main__':
             if element['value'] == ' ':
                 continue
             transcript_elements.append(element)
-    
+    return transcript_elements
+
+
+def diarize_transcript_elements(transcript_elements, diarization, diarization_offset=0.0):
     # Add speaker info to elements
     last_speaker = 'Doctor'
     for idx, element in enumerate(transcript_elements):
@@ -52,8 +40,8 @@ if __name__ == '__main__':
         start_time = float(element["ts"])
         end_time = float(element["end_ts"])
         speaker_counts = {}
-        for prediction in diarization_file["diarization"]:
-            prediction_time = prediction["time"] + args.diarization_offset
+        for prediction in diarization:
+            prediction_time = prediction["time"] + diarization_offset
             if prediction_time > end_time:
                 break
             if start_time <= prediction_time <= end_time:
@@ -70,6 +58,31 @@ if __name__ == '__main__':
             speaker = max(speaker_counts, key=speaker_counts.get)
             element["speaker"] = speaker
             last_speaker = speaker
+    return transcript_elements
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--transcript_file", type=str, required=True)
+    parser.add_argument("--diarization_file", type=str, required=True)
+    parser.add_argument("--output_folder", type=str, required=True)
+    parser.add_argument("--diarization_offset", required=False, type=float, default=0.0)
+    args = parser.parse_args()
+
+    with open(args.transcript_file, 'r') as f:
+        transcript_file = json.load(f)
+
+    with open(args.diarization_file, 'r') as f:
+        diarization_file = json.load(f)
+
+    transcript = []
+
+    transcript_elements = parse_transcript_elements(transcript_file)
+    
+    diarize_transcript_elements(
+        transcript_elements,
+        diarization_file["diarization"],
+        args.diarization_offset)
 
     # Group speakers elements into transcript
     last_speaker = None
