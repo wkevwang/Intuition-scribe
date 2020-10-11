@@ -9,7 +9,7 @@ connected with a dash. Add space between multiple audio segments.
 E.g. --doctor_segments 3.2-5.5 10-12.1
 
 Other arguments
-* partials_n_frames: The number of frames used per prediction
+* partials_n_frames: The number of frames used per prediction. 120 seems to be the most accurate
 * audio_embed_rate: How many times per second to make predictions
 * speaker_embed_rate: How many times per second to embed the audio
     segments for each speaker

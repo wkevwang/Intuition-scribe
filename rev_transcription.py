@@ -5,6 +5,7 @@ Sends audio file to rev.ai and gets transcript file back.
 import argparse
 import os
 import json
+from time import sleep
 from rev_ai import apiclient, JobStatus
 
 from utilities import prp
