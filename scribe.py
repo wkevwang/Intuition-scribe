@@ -11,7 +11,8 @@ import random
 
 from utilities import *
 from constants import *
-import snomed
+from snomed_ct import snomed
+from gpt_summary import generate_summary
 
 
 def find_first_sentence_response_to_question(next_turn, start_index=0):
@@ -69,7 +70,6 @@ def determine_category_of_qa(question_list_format, response_list_format, first, 
 
 
 def summarize_qa(question, response):
-    import generate_summary
     print("Summarizing Q:'{}' A:'{}'".format(question, response))
     summaries_batch = generate_summary.summarize(question, response, max_batches=3)
     for summary in summaries_batch:

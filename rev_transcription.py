@@ -25,6 +25,7 @@ if __name__ == "__main__":
     
     job_details = client.get_job_details(job.id)
 
+    print("Job ID is {}".format(job.id))
     print("Waiting for transcription...")
     while job_details.status is not JobStatus.TRANSCRIBED:
         sleep(1)
