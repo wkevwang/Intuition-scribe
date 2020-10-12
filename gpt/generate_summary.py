@@ -10,11 +10,11 @@ import sys
 from nltk.stem import WordNetLemmatizer
 from nltk.stem.snowball import SnowballStemmer
 from nltk.stem.porter import *
-from gpt import model, sample, encoder
+import model, sample, encoder
 import tensorflow as tf
 
 sys.path.append('..')
-import snomed
+from snomed_ct import snomed
 from utilities import *
 
 
