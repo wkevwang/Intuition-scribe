@@ -10,10 +10,12 @@ import sys
 from nltk.stem import WordNetLemmatizer
 from nltk.stem.snowball import SnowballStemmer
 from nltk.stem.porter import *
-import model, sample, encoder
 import tensorflow as tf
 
-sys.path.append('..')
+sys.path.append(os.path.dirname(os.path.abspath(__file__))) # Import current folder to sys.path
+import model, sample, encoder
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) # Import parent folder to sys.path
 from snomed_ct import snomed
 from utilities import *
 
@@ -66,8 +68,6 @@ Question: Can you explain exactly what you mean when you say breathlessness?
 Answer: Yeah, it's just that, you know, struggling to kind of just catch my breath, especially when I'm walking down when I'm walking upstairs.
 Summary: Patient struggles to catch breath, especially when walking upstairs.
 """
-
-
 
 
 
