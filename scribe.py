@@ -12,7 +12,7 @@ import random
 from utilities import *
 from constants import *
 from snomed_ct import snomed
-from gpt_summary import generate_summary
+from gpt import generate_summary
 
 
 def find_first_sentence_response_to_question(next_turn, start_index=0):

@@ -1,4 +1,6 @@
-#!/usr/bin/env python3
+"""
+
+"""
 
 import json
 import os
@@ -8,7 +10,7 @@ import sys
 from nltk.stem import WordNetLemmatizer
 from nltk.stem.snowball import SnowballStemmer
 from nltk.stem.porter import *
-import model, sample, encoder
+from gpt import model, sample, encoder
 import tensorflow as tf
 
 sys.path.append('..')
@@ -143,7 +145,7 @@ def check_summary(terms, question, answer, summary):
     return True, "Passed"
 
 
-def summarize(question, answer, max_batches=1):
+def summarize(question, answer, max_batches=3):
     summaries_batch = []
     context_tokens = enc.encode("{}Question: {}\nAnswer: {}\nSummary: ".format(context_text, question, answer))
     for batch_idx in range(max_batches):
