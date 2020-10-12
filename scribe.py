@@ -189,6 +189,7 @@ if __name__ == "__main__":
             question_list_format = find_list_format_slice_with_label_id(transcript, qa_label['question_label_id'])
             response_list_format = find_list_format_slice_with_label_id(transcript, qa_label['label_id'])
             qa_is_important_ = qa_is_important(question_list_format, response_list_format)
+            qa_summary = None
             if qa_is_important_:
                 qa_summary = summarize_qa(question, response)
                 category = determine_category_of_qa(question_list_format, response_list_format, first, pmh_mentioned)
@@ -202,11 +203,13 @@ if __name__ == "__main__":
                     pmh_mentioned = True
             if args.print_qa:
                 print("Question: {}".format(question))
-                print("Response: {}".format(response))
-                print("Summary: {}".format(qa_summary))
+                print("Response: {}".format(response))                    
                 if qa_is_important_:
                     print("QA is important")
+                    print("Summary: {}".format(qa_summary))
                     print("Category: {}".format(category))
+                else:
+                    print("QA not important")
                 print()
     print()
 

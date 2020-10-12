@@ -145,15 +145,15 @@ def check_summary(terms, question, answer, summary):
     return True, "Passed"
 
 
-def summarize(question, answer, max_batches=3):
+def summarize(question, answer, batch_size=10, max_batches=3):
     summaries_batch = []
     context_tokens = enc.encode("{}Question: {}\nAnswer: {}\nSummary: ".format(context_text, question, answer))
     for batch_idx in range(max_batches):
         print("Batch {} of {}...".format(batch_idx + 1, max_batches))
         out = sess.run(output, feed_dict={
-            context: [context_tokens for _ in range(args.batch_size)]
+            context: [context_tokens for _ in range(batch_size)]
         })[:, len(context_tokens):]
-        for i in range(args.batch_size):
+        for i in range(batch_size):
             text = enc.decode(out[i])
             text = text.replace(u'\xa0', '') # Remove non-breaking space which, for some reason, is at the beginning of text
             summary = text.split('\n')[0]
