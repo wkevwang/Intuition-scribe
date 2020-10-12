@@ -177,7 +177,7 @@ if __name__ == "__main__":
     
     # Build Q&A pairs
     print("Building summary...")
-    # generate_summary.init_model(model_name=args.model_name, terms_folder=args.terms_folder)
+    generate_summary.init_model(model_name=args.model_name, terms_folder=args.terms_folder)
     qa_summaries = []
     first = True
     pmh_mentioned = False
