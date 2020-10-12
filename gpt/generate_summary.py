@@ -184,8 +184,7 @@ if __name__ == "__main__":
 else:
     args = parser.parse_args([])
 
-models_dir = 'models'
-models_dir = os.path.expanduser(os.path.expandvars(models_dir))
+models_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models')
 snomed_terms = snomed.load_snomed_terms(args.terms_folder)
 
 enc = encoder.get_encoder(args.model_name, models_dir)
