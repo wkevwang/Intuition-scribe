@@ -167,48 +167,57 @@ def summarize(question, answer, max_batches=3):
                 return summaries_batch
     return summaries_batch
 
+sess = None
+context = None
+enc = None
+output = None
+snomed_terms = None
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--model_name", default="774M", type=str, required=False)
-parser.add_argument("--length", default=30, type=int, required=False)
-parser.add_argument("--batch_size", default=10, type=int, required=False)
-parser.add_argument("--terms_folder", default='terms', type=str, required=False)
-parser.add_argument("--print_all", default=False, action='store_true', required=False)
-parser.add_argument("--temperature", default=1.0, type=float, required=False)
-parser.add_argument("--top_k", default=40, type=int, required=False)
-parser.add_argument("--top_p", default=1.0, type=float, required=False)
-parser.add_argument("--seed", default=None, type=int, required=False)
-parser.add_argument("--max_batches_per_qa", default=5, type=int, required=False)
+def init_model(model_name="774M", length=30, batch_size=10, terms_folder="terms", temperature=1.0,
+               top_k=40, top_p=1.0, seed=None):
+    global sess, context, enc, output, snomed_terms
+    models_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models')
+    snomed_terms = snomed.load_snomed_terms(terms_folder)
+
+    enc = encoder.get_encoder(model_name, models_dir)
+    hparams = model.default_hparams()
+    with open(os.path.join(models_dir, model_name, 'hparams.json')) as f:
+        hparams.override_from_dict(json.load(f))
+
+    tf.compat.v1.disable_eager_execution()
+    sess = tf.Session()
+    context = tf.placeholder(tf.int32, [batch_size, None])
+    np.random.seed(seed)
+    tf.set_random_seed(seed)
+    output = sample.sample_sequence(
+        hparams=hparams, length=length,
+        context=context,
+        batch_size=batch_size,
+        temperature=temperature, top_k=top_k, top_p=top_p
+    )
+
+    saver = tf.train.Saver()
+    ckpt = tf.train.latest_checkpoint(os.path.join(models_dir, model_name))
+    saver.restore(sess, ckpt)
+
+
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--model_name", default="774M", type=str, required=False)
+    parser.add_argument("--length", default=30, type=int, required=False)
+    parser.add_argument("--batch_size", default=10, type=int, required=False)
+    parser.add_argument("--terms_folder", default='terms', type=str, required=False)
+    parser.add_argument("--print_all", default=False, action='store_true', required=False)
+    parser.add_argument("--temperature", default=1.0, type=float, required=False)
+    parser.add_argument("--top_k", default=40, type=int, required=False)
+    parser.add_argument("--top_p", default=1.0, type=float, required=False)
+    parser.add_argument("--seed", default=None, type=int, required=False)
+    parser.add_argument("--max_batches_per_qa", default=5, type=int, required=False)
     args = parser.parse_args()
-else:
-    args = parser.parse_args([])
 
-models_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'models')
-snomed_terms = snomed.load_snomed_terms(args.terms_folder)
+    init_model(args.model_name, args.length, args.batch_size, args.terms_folder, args.terms_folder,
+               args.top_k, args.top_p, args.seed)
 
-enc = encoder.get_encoder(args.model_name, models_dir)
-hparams = model.default_hparams()
-with open(os.path.join(models_dir, args.model_name, 'hparams.json')) as f:
-    hparams.override_from_dict(json.load(f))
-
-tf.compat.v1.disable_eager_execution()
-sess = tf.Session()
-context = tf.placeholder(tf.int32, [args.batch_size, None])
-np.random.seed(args.seed)
-tf.set_random_seed(args.seed)
-output = sample.sample_sequence(
-    hparams=hparams, length=args.length,
-    context=context,
-    batch_size=args.batch_size,
-    temperature=args.temperature, top_k=args.top_k, top_p=args.top_p
-)
-
-saver = tf.train.Saver()
-ckpt = tf.train.latest_checkpoint(os.path.join(models_dir, args.model_name))
-saver.restore(sess, ckpt)
-
-if __name__ == "__main__":
     while True:
         question = input("Question: ")
         answer = input("Answer: ")

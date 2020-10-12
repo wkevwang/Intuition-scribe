@@ -144,6 +144,7 @@ if __name__ == "__main__":
     parser.add_argument("--print_transcript", action='store_true', required=False)
     parser.add_argument("--print_qa", action='store_true', required=False)
     parser.add_argument("--print_summary", action='store_true', required=False)
+    parser.add_argument("--model_name", default="774M", type=str, required=False)
     args = parser.parse_args()
 
     print("Loading SNOMED terms...")
@@ -173,9 +174,10 @@ if __name__ == "__main__":
         print()
 
     note = {category: [] for category in CATEGORIES}
-
+    
     # Build Q&A pairs
     print("Building summary...")
+    # generate_summary.init_model(model_name=args.model_name, terms_folder=args.terms_folder)
     qa_summaries = []
     first = True
     pmh_mentioned = False
@@ -201,9 +203,10 @@ if __name__ == "__main__":
             if args.print_qa:
                 print("Question: {}".format(question))
                 print("Response: {}".format(response))
+                print("Summary: {}".format(qa_summary))
                 if qa_is_important_:
                     print("QA is important")
-                    print(category)
+                    print("Category: {}".format(category))
                 print()
     print()
 
