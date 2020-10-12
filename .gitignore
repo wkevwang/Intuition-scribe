@@ -10,6 +10,7 @@ data/
 snomed_ct/*.txt
 transcriptions/
 qa_summary/
+gpt/models/
 
 .DS_Store
 *.docx
