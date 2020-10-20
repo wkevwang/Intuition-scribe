@@ -63,6 +63,7 @@ def diarize_transcript_elements(transcript_elements, diarization, diarization_of
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
+    parser.add_argument("--audio_file", type=str, required=True)
     parser.add_argument("--transcript_file", type=str, required=True)
     parser.add_argument("--diarization_file", type=str, required=True)
     parser.add_argument("--output_folder", type=str, required=True)
@@ -116,7 +117,7 @@ if __name__ == '__main__':
             print()
             print()
     
-    filename_prefix = os.path.splitext(os.path.basename(args.transcript_file))[0]
+    filename_prefix = os.path.splitext(os.path.basename(args.audio_file))[0]
     filename = filename_prefix + '_rev_transcript_diarized.json'
     with open(os.path.join(args.output_folder, filename), 'w') as f:
         json.dump({'transcript': transcript}, f, indent=4)
