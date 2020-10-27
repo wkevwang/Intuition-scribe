@@ -44,17 +44,19 @@ def samples_between_preidctions(args):
     return int(np.round((sampling_rate / rate) / samples_per_frame))
 
 
-def print_predictions(speaker_predictions, wav_splits, similarity_matrix, audio_embed_rate, freq=2):
+def print_predictions(speaker_predictions, wav_splits, doctor_conf, patient_conf, audio_embed_rate, freq=2):
     interval = int(audio_embed_rate / freq)
     for i in range(0, len(speaker_predictions), interval):
         midpoint_offset = (wav_splits[i].stop - wav_splits[i].start) / sampling_rate / 2
         seconds = (wav_splits[i].start / sampling_rate) + midpoint_offset
-        print("{}m:{}s | Speaker: {} | Doctor Conf: {}".format(
+        print("{}m:{}s | Speaker: {} | Doctor Conf: {} | Patient Conf: {}".format(
             int(seconds / 60), round(seconds % 60, 1),
-            speaker_predictions[i], similarity_matrix[0, i]))
+            speaker_predictions[i],
+            round(doctor_conf[i], 3),
+            round(patient_conf[i], 3)))
 
 
-def format_diarization(speaker_predictions, wav_splits):
+def format_diarization(speaker_predictions, doctor_conf, patient_conf, wav_splits):
     diarization = []
     for i in range(len(speaker_predictions)):
         midpoint_offset = (wav_splits[i].stop - wav_splits[i].start) / sampling_rate / 2
@@ -62,16 +64,22 @@ def format_diarization(speaker_predictions, wav_splits):
         speaker_prediction = speaker_predictions[i]
         diarization.append({
             "time": round(seconds, 2),
-            "speaker": speaker_prediction
+            "speaker": speaker_prediction,
+            "doctor_conf": round(doctor_conf[i], 3),
+            "patient_conf": round(patient_conf[i], 3),
         })
     return diarization
 
 
-def write_json(diarization, output_folder, audio_file):
+def write_json(diarization, output_folder, audio_file, doctor_segments, patient_segments):
     filename_prefix = os.path.splitext(os.path.basename(audio_file))[0]
     json_filename = filename_prefix + '_diarization.json'
     with open(os.path.join(output_folder, json_filename), 'w') as f:
-        json.dump({"diarization": diarization}, f, indent=4)
+        json.dump({
+            "diarization": diarization,
+            "doctor_segments": doctor_segments,
+            "patient_segments": patient_segments,
+        }, f, indent=4)
 
 
 def compute_diarization(wav, encoder, partials_n_frames, speaker_embed_rate,
@@ -105,6 +113,16 @@ def compute_diarization(wav, encoder, partials_n_frames, speaker_embed_rate,
 
     return speaker_predictions, similarity_matrix, wav_splits
 
+
+def calculate_avg_speaker_conf(num_doctor_recs, num_patient_recs, similarity_matrix):
+    assert (num_doctor_recs + num_patient_recs) == len(similarity_matrix)
+    doctor_conf_matrix = similarity_matrix[:num_doctor_recs]
+    patient_conf_matrix = similarity_matrix[num_doctor_recs:]
+    doctor_conf = np.average(doctor_conf_matrix, axis=0).tolist()
+    patient_conf = np.average(patient_conf_matrix, axis=0).tolist()
+    return doctor_conf, patient_conf
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--audio_file", type=str, required=True)
@@ -124,9 +142,14 @@ if __name__ == "__main__":
         wav, encoder, args.partials_n_frames, args.speaker_embed_rate, args.audio_embed_rate,
         args.doctor_segments, args.patient_segments)
 
+    # Calculate speaker confidences from averaging
+    doctor_conf, patient_conf = calculate_avg_speaker_conf(
+        len(args.doctor_segments), len(args.patient_segments), similarity_matrix)
+
     # Print predictions
-    print_predictions(speaker_predictions, wav_splits, similarity_matrix, args.audio_embed_rate)
+    print_predictions(speaker_predictions, wav_splits, doctor_conf, patient_conf, 
+        args.audio_embed_rate)
 
     # Produce output JSON data
-    diarization = format_diarization(speaker_predictions, wav_splits)
-    write_json(diarization, args.output_folder, args.audio_file)
+    diarization = format_diarization(speaker_predictions, doctor_conf, patient_conf, wav_splits)
+    write_json(diarization, args.output_folder, args.audio_file, args.doctor_segments, args.patient_segments)

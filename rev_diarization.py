@@ -30,7 +30,15 @@ def parse_transcript_elements(transcript_file):
 
 
 def diarize_transcript_elements(transcript_elements, diarization, diarization_offset=0.0):
-    # Add speaker info to elements
+    """
+    Add speaker label to elements in transcript_elements
+    (i.e. speaker: 'Doctor' or speaker: 'Patient')
+
+    Finds the elements in transcript_elements with start_time <= prediction_time <= end_time,
+    prediction time being the timestamps with speaker labels in 'diarization'.
+
+    Use diarization_offset to shift prediction_time by a constant.
+    """
     last_speaker = 'Doctor'
     for idx, element in enumerate(transcript_elements):
         if "ts" not in element:
@@ -61,6 +69,21 @@ def diarize_transcript_elements(transcript_elements, diarization, diarization_of
     return transcript_elements
 
 
+def assign_no_to_patient(transcript_elements):
+    """
+    Assign all utterances of "No." spoken by the doctor to the patient instead
+    because "No." is often not diarized correctly.
+    """
+    for idx, element in enumerate(transcript_elements):
+        # At 2nd last index, stop
+        if idx + 1 == (len(transcript_elements) - 1):
+            break
+        next_element = transcript_elements[idx + 1]
+        if element["value"] == "No" and next_element["value"] == ".":
+            element["speaker"] = "Patient"
+            next_element["speaker"] = "Patient"
+
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("--audio_file", type=str, required=True)
@@ -81,10 +104,14 @@ if __name__ == '__main__':
 
     transcript_elements = parse_transcript_elements(transcript_file)
     
+    # Add speaker: "Doctor" or speaker: "Patient" labels to the list of elements
     diarize_transcript_elements(
         transcript_elements,
         diarization_file["diarization"],
         args.diarization_offset)
+    
+    # Assign "No." to patient
+    assign_no_to_patient(transcript_elements)
 
     # Group speakers elements into transcript
     last_speaker = None
