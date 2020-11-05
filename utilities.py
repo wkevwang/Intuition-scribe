@@ -7,7 +7,6 @@ from colorama import Fore, Style
 from constants import *
 
 
-
 def capitalize(text):
     return text[0].upper() + text[1:]
 
@@ -171,3 +170,17 @@ def format_command(string):
         print(e, end=' ')
     print()
     print()
+
+
+def print_transcript(transcript, show_confidence=False):
+    print()
+    print("TRANSCRIPT WITH PROBABILITIES")
+    for turn in transcript:
+        print("{}: ".format(turn['speaker']), end='')
+        for item in turn['items']:
+            confidence = item.get('confidence', 0)
+            if not show_confidence: # If don't show probs, always print white (confidnece = 1.0)
+                confidence = 1.0
+            print_conf(item['content'], float(confidence), newline=False)
+        print()
+        print()

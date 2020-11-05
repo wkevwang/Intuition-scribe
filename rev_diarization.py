@@ -134,15 +134,7 @@ if __name__ == '__main__':
             last_speaker = speaker
 
     if args.print_transcript:
-        print()
-        print("TRANSCRIPT WITH PROBABILITIES")
-        for turn in transcript:
-            print("{}: ".format(turn['speaker']), end='')
-            for item in turn['items']:
-                confidence = item.get('confidence', 0)
-                print_conf(item['content'], float(confidence), newline=False)
-            print()
-            print()
+        print_transcript(transcript, show_confidence=True)
     
     filename_prefix = os.path.splitext(os.path.basename(args.audio_file))[0]
     filename = filename_prefix + '_rev_transcript_diarized.json'

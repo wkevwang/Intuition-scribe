@@ -108,10 +108,12 @@ def compute_diarization(wav, encoder, partials_n_frames, speaker_embed_rate,
                        zip(speaker_names, speaker_embeds)}
     similarity_matrix = np.array([cont_embeds @ speaker_embed for name, speaker_embed in
                                 zip(speaker_names, speaker_embeds)])
-    speaker_predictions_indexes = np.argmax(similarity_matrix, axis=0)
-    speaker_predictions = [speaker_names[index] for index in speaker_predictions_indexes]
-
-    return speaker_predictions, similarity_matrix, wav_splits
+    doctor_confs, patient_confs = calculate_avg_speaker_conf(
+        len(doctor_segments), len(patient_segments), similarity_matrix)
+    speaker_predictions = [
+        "Doctor" if d_conf > p_conf else "Patient"
+        for d_conf, p_conf in zip(doctor_confs, patient_confs)]
+    return speaker_predictions, wav_splits, doctor_confs, patient_confs
 
 
 def calculate_avg_speaker_conf(num_doctor_recs, num_patient_recs, similarity_matrix):
@@ -138,13 +140,9 @@ if __name__ == "__main__":
     wav = preprocess_wav(args.audio_file)
     encoder = VoiceEncoder("cpu", model_file=args.model_file)
 
-    speaker_predictions, similarity_matrix, wav_splits = compute_diarization(
+    speaker_predictions, wav_splits, doctor_confs, patient_confs = compute_diarization(
         wav, encoder, args.partials_n_frames, args.speaker_embed_rate, args.audio_embed_rate,
         args.doctor_segments, args.patient_segments)
-
-    # Calculate speaker confidences from averaging
-    doctor_conf, patient_conf = calculate_avg_speaker_conf(
-        len(args.doctor_segments), len(args.patient_segments), similarity_matrix)
 
     # Print predictions
     print_predictions(speaker_predictions, wav_splits, doctor_conf, patient_conf, 
