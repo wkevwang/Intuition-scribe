@@ -145,9 +145,12 @@ if __name__ == "__main__":
         args.doctor_segments, args.patient_segments)
 
     # Print predictions
-    print_predictions(speaker_predictions, wav_splits, doctor_conf, patient_conf, 
-        args.audio_embed_rate)
+    print_predictions(
+        speaker_predictions, wav_splits, doctor_confs, patient_confs, args.audio_embed_rate)
 
     # Produce output JSON data
-    diarization = format_diarization(speaker_predictions, doctor_conf, patient_conf, wav_splits)
-    write_json(diarization, args.output_folder, args.audio_file, args.doctor_segments, args.patient_segments)
+    diarization = format_diarization(
+        speaker_predictions, doctor_confs, patient_confs, wav_splits)
+    write_json(
+        diarization, args.output_folder, args.audio_file, args.doctor_segments,
+        args.patient_segments)
