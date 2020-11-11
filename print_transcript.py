@@ -2,7 +2,7 @@ import os
 import json
 import argparse
 
-from utilities import print_transcript_with_probs
+from utilities import print_transcript
 
 
 if __name__ == '__main__':
@@ -14,4 +14,4 @@ if __name__ == '__main__':
         transcript_json = json.load(f)
         transcript = transcript_json["transcript"]
     
-    print_transcript_with_probs(transcript, show_confidence=True)
+    print_transcript(transcript, show_confidence=True)

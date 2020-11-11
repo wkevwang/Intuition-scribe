@@ -45,6 +45,8 @@ REGEX_MARKERS = {
     ],
     "MEDICATIONS_CATEGORY": [
         r"(medications)",
+        r"(I take[^\.\?\!]+(\.|\?|\!))",
+        r"(I took[^\.\?\!]+(\.|\?|\!))",
     ],
     "FH_CATEGORY": [
         r"(family)(?: |\.|\?|\!)",
@@ -61,10 +63,12 @@ REGEX_MARKERS = {
         r"(smoke)",
         r"(smoking)",
         r"(alcohol)",
-    ],
-    "MEDICATIONS": [
-        r"(I take[^\.\?\!]+(\.|\?|\!))",
-        r"(I took[^\.\?\!]+(\.|\?|\!))",
+        r"(coffee)",
+        r"(exercise)",
+        r"(diet)",
+        r"(recreational drugs)",
+        r"(relationship status)",
+        r"(married)",
     ],
     "NEGATION": [
         r"(?: |^)(no)(?: |\.|\?)"
@@ -85,7 +89,6 @@ COLOUR_MAP = {
     "REGEX_MEDICATIONS_CATEGORY": Fore.CYAN,
     "REGEX_FH_CATEGORY": Fore.CYAN,
     "REGEX_SH_CATEGORY": Fore.CYAN,
-    "REGEX_MEDICATIONS": Fore.MAGENTA,
     "REGEX_NEGATION": Fore.MAGENTA,
     "REGEX_TIME": Fore.MAGENTA,
 }

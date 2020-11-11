@@ -7,7 +7,7 @@ import argparse
 import os
 import glob
 import pandas as pd
-
+import json
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -21,9 +21,36 @@ if __name__ == "__main__":
         df = pd.read_csv(filename, header=0)
         li.append(df)
 
-    frame = pd.concat(li, axis=0, ignore_index=True)
-    for idx, row in frame.iterrows():
-        if 'no.' in row['Answer'].lower():
-            print("Question: {}".format(row['Question']))
-            print("Answer: {}".format(row['Answer']))
-            print("Summary: {}".format(row['Summary']))
+    df = pd.concat(li, axis=0, ignore_index=True)
+
+    categories = [
+        "General",
+        "Social History",
+        "Pain",
+        "Negation",
+        "Family History",
+        "Severity",
+        "Medication",
+    ]
+
+    data_array = {c: [] for c in categories}
+    data_string = {c: "" for c in categories}
+
+    for idx, row in df.iterrows():
+        category = row['Category']
+        data_array[category].append(row)
+
+    for category, array in data_array.items():
+        print("Category: {} | {} items total".format(category, len(array)))
+        for row in array:
+            question_str = "Question: {}\n".format(row['Question'])
+            answer_str = "Answer: {}\n".format(row['Answer'])
+            summary_str = "Summary: {}\n".format(row['Summary'])
+            print(question_str, end='')
+            print(answer_str, end='')
+            print(summary_str, end='')
+            data_string[category] += question_str + answer_str + summary_str
+        print()
+    
+    with open("context.json", 'w') as output_file:
+        json.dump(data_string, output_file, indent=4)

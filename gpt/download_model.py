@@ -1,3 +1,8 @@
+"""
+Model names:
+1558M, 774M, 355M, 345M, 124M, and 117M
+"""
+
 import os
 import sys
 import requests

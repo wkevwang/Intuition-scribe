@@ -218,7 +218,7 @@ if __name__ == "__main__":
         for category in CATEGORIES:
             print(category.upper())
             for sentence in note[category]:
-                print(sentence, end=' ')
+                print("- {}".format(sentence))
             if len(note[category]) == 0:
                 print("None")
             else:
