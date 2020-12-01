@@ -7,8 +7,10 @@ from rouge_score import rouge_scorer
 from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import Dataset, DataLoader
-from transformers import T5ForConditionalGeneration, T5Tokenizer
+from transformers import T5Tokenizer
 from transformers import Adafactor, AdamW
+
+from utils import *
 
 class QuestionAnswerSummaryDataset(Dataset):
     def __init__(self, mode, data_folder, input_max_length=128, test_size=0.1):
@@ -80,9 +82,7 @@ class QuestionAnswerSummaryDataset(Dataset):
 
     def __getitem__(self, idx):
         data = self.get_data()[idx]
-        prompt = "summarize: <question> {} <answer> {}".format(
-            data["question"], data["answer"]
-        )
+        prompt = build_prompt(data["question"], data["answer"])
         label = data["summary"]
         prompt_data = self.tokenizer(
             prompt,
@@ -102,55 +102,6 @@ class QuestionAnswerSummaryDataset(Dataset):
             "prompt_data": prompt_data,
             "label_data": label_data,
         }
-
-
-def generate(model, input_, max_len=128, device='cpu'):
-    tokenizer = T5Tokenizer.from_pretrained('t5-base')
-    input_ids = tokenizer(input_, return_tensors='pt').input_ids
-    input_ids = input_ids.to(device)
-    beam_outputs = model.generate(
-        input_ids=input_ids,
-        do_sample=True,
-        max_length=max_len,
-        top_k=120,
-        top_p=0.7,
-        early_stopping=True,
-        num_return_sequences=1
-    )
-    final_outputs = []
-    sentence = tokenizer.decode(beam_outputs[0])
-    return sentence
-
-
-def get_checkpoint_file_path(model_name, checkpoints_dir):
-    """
-    Returns the full path where model should be saved.
-    E.g. /home/kevin/scribe/checkpoints/model-5.pt
-
-    The checkpoints_dir is created in the current working directory.
-    """
-    current_working_directory = os.getcwd()
-    checkpoints_dir_full = os.path.join(current_working_directory, checkpoints_dir)
-    model_file_name = model_name + '.pt'
-    checkpoint_file_path = os.path.join(checkpoints_dir_full, model_file_name)
-    return checkpoint_file_path
-
-
-def save_model(model, model_name, checkpoints_dir):
-    """
-    Saves model with name <model>.pt in checkpoints_dir.
-    Creates checkpoints_dir if it doesn't exist already.
-    """
-    checkpoint_file_path = get_checkpoint_file_path(model_name, checkpoints_dir)
-    checkpoints_dir_full = os.path.dirname(checkpoint_file_path)
-    os.makedirs(checkpoints_dir_full, exist_ok=True)
-    torch.save(model.state_dict(), checkpoint_file_path)
-
-
-def load_model(model, model_name, checkpoints_dir):
-    checkpoint_file_path = get_checkpoint_file_path(model_name, checkpoints_dir)
-    state_dict = torch.load(checkpoint_file_path)
-    model.load_state_dict(state_dict)
 
 
 if __name__ == "__main__":
@@ -198,8 +149,12 @@ if __name__ == "__main__":
     print("{} items in validation dataset".format(len(validation_dataset)))
 
     # Define the model
-    model = T5ForConditionalGeneration.from_pretrained(args.model)
+    model = initialize_t5_model(args.model)
     model = model.to(device)
+
+    # Load model
+    if args.load_model:
+        load_model(model, args.load_model, args.checkpoints_dir)
 
     # Define optimizer
     if args.optimizer == "Adam":
@@ -263,3 +218,6 @@ if __name__ == "__main__":
 
             print("Validation Loss: {}".format(round(total_loss / total_batches, 4)))
             print("Validation ROUGE-1 F1: {}".format(round(total_rouge1_f1_score / (total_batches * args.batch_size), 4)))
+
+    print("Saving model...")
+    save_model(model, args.model_name, args.checkpoints_dir)
