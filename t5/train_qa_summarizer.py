@@ -8,6 +8,7 @@ from sklearn.model_selection import train_test_split
 import torch
 from torch.utils.data import Dataset, DataLoader
 from transformers import T5ForConditionalGeneration, T5Tokenizer
+from transformers import Adafactor, AdamW
 
 class QuestionAnswerSummaryDataset(Dataset):
     def __init__(self, mode, data_folder, input_max_length=128, test_size=0.1):
@@ -121,15 +122,52 @@ def generate(model, input_, max_len=128, device='cpu'):
     return sentence
 
 
+def get_checkpoint_file_path(model_name, checkpoints_dir):
+    """
+    Returns the full path where model should be saved.
+    E.g. /home/kevin/scribe/checkpoints/model-5.pt
+
+    The checkpoints_dir is created in the current working directory.
+    """
+    current_working_directory = os.getcwd()
+    checkpoints_dir_full = os.path.join(current_working_directory, checkpoints_dir)
+    model_file_name = model_name + '.pt'
+    checkpoint_file_path = os.path.join(checkpoints_dir_full, model_file_name)
+    return checkpoint_file_path
+
+
+def save_model(model, model_name, checkpoints_dir):
+    """
+    Saves model with name <model>.pt in checkpoints_dir.
+    Creates checkpoints_dir if it doesn't exist already.
+    """
+    checkpoint_file_path = get_checkpoint_file_path(model_name, checkpoints_dir)
+    checkpoints_dir_full = os.path.dirname(checkpoint_file_path)
+    os.makedirs(checkpoints_dir_full, exist_ok=True)
+    torch.save(model.state_dict(), checkpoint_file_path)
+
+
+def load_model(model, model_name, checkpoints_dir):
+    checkpoint_file_path = get_checkpoint_file_path(model_name, checkpoints_dir)
+    state_dict = torch.load(checkpoint_file_path)
+    model.load_state_dict(state_dict)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
+    parser.add_argument("--model_name", type=str, default="model")
+    parser.add_argument("--load_model", type=str, default=None)
+    parser.add_argument("--checkpoints_dir", type=str, default="checkpoints")
     parser.add_argument("--qa_data", type=str, required=True)
     parser.add_argument("--batch_size", type=int, default=4)
     parser.add_argument("--num_epochs", type=int, default=5)
     parser.add_argument("--model", type=str, default="t5-small")
     parser.add_argument("--input_max_length", type=int, default=128)
     parser.add_argument("--test_size", type=float, default=0.1)
+    parser.add_argument("--optimizer", type=str, default="Adam")
     args = parser.parse_args()
+
+    print("Arguments: {}".format(args))
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using device: {}".format(device))
@@ -153,8 +191,7 @@ if __name__ == "__main__":
 
     validation_dataloader = torch.utils.data.DataLoader(
         validation_dataset,
-        batch_size=args.batch_size,
-        shuffle=True)
+        batch_size=args.batch_size)
 
     # Print data stats
     print("{} items in train dataset".format(len(train_dataset)))
@@ -165,7 +202,14 @@ if __name__ == "__main__":
     model = model.to(device)
 
     # Define optimizer
-    optimizer = torch.optim.Adam(model.parameters())
+    if args.optimizer == "Adam":
+        optimizer = torch.optim.Adam(model.parameters())
+    elif args.optimizer == "AdamW":
+        optimizer = AdamW(model.parameters())
+    elif args.optimizer == "Adafactor":
+        optimizer = Adafactor(model.parameters(), lr=1e-3, relative_step=False, warmup_init=True)
+    else:
+        raise ValueError("Invalid optimizer")
 
     # Define ROUGE Scorer
     scorer = rouge_scorer.RougeScorer(['rouge1'])
@@ -174,6 +218,7 @@ if __name__ == "__main__":
     for epoch in range(args.num_epochs):
         print("Epoch: {}".format(epoch + 1))
 
+        model.train()
         for i, data in enumerate(train_dataloader):
             optimizer.zero_grad()
             data["prompt_data"]["input_ids"] = data["prompt_data"]["input_ids"].to(device)
@@ -191,6 +236,7 @@ if __name__ == "__main__":
             print("Train Loss: {}".format(round(loss.item(), 4)))
 
         print("Running validation...")
+        model.eval()
         with torch.no_grad():
             total_loss = 0
             total_batches = 0
