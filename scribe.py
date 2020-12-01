@@ -71,11 +71,8 @@ def determine_category_of_qa(question_list_format, response_list_format, first, 
 
 def summarize_qa(question, response):
     print("Summarizing Q:'{}' A:'{}'".format(question, response))
-    summaries_batch = generate_summary.summarize(question, response, max_batches=3)
-    for summary in summaries_batch:
-        if summary['summary_valid']:
-            return summary['summary']
-    return "[Q: {} A: {}]".format(question, response)
+    summary = generate_summary.summarize(question, response, batch_size=1, max_batches=1)[0]
+    return summary
 
 
 def add_regex_labels_to_transcript(transcript):
@@ -178,7 +175,6 @@ if __name__ == "__main__":
     # Build Q&A pairs
     print("Building summary...")
     generate_summary.init_model(model_name=args.model_name, terms_folder=args.terms_folder)
-    qa_summaries = []
     first = True
     pmh_mentioned = False
     for turn in transcript:
@@ -193,21 +189,17 @@ if __name__ == "__main__":
             if qa_is_important_:
                 qa_summary = summarize_qa(question, response)
                 category = determine_category_of_qa(question_list_format, response_list_format, first, pmh_mentioned)
-                qa_summaries.append({
-                    "text": qa_summary,
-                    "category": category,
-                })
-                note[category].append(qa_summary)
+                note[category].append(qa_summary['summary'])
                 first = False
                 if category == PMH:
                     pmh_mentioned = True
             if args.print_qa:
                 print("Question: {}".format(question))
-                print("Response: {}".format(response))                    
+                print("Response: {}".format(response))
                 if qa_is_important_:
                     print("QA is important")
-                    print("Summary: {}".format(qa_summary))
-                    print("Category: {}".format(category))
+                    print("Summary: {}".format(qa_summary['summary']))
+                    print("Category: {} | Context Category: {}".format(category, qa_summary['context_category']))
                 else:
                     print("QA not important")
                 print()
