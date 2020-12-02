@@ -12,7 +12,7 @@ import random
 from utilities import *
 from constants import *
 from snomed_ct import snomed
-from gpt import generate_summary
+from t5 import generate_summary
 
 
 def find_first_sentence_response_to_question(next_turn, start_index=0):
@@ -71,7 +71,7 @@ def determine_category_of_qa(question_list_format, response_list_format, first, 
 
 def summarize_qa(question, response):
     print("Summarizing Q:'{}' A:'{}'".format(question, response))
-    summary = generate_summary.summarize(question, response, batch_size=1, max_batches=1)[0]
+    summary = generate_summary.summarize(question, response)
     return summary
 
 
@@ -139,10 +139,9 @@ if __name__ == "__main__":
     parser.add_argument("--terms_folder", type=str, required=True)
     parser.add_argument("--transcript", type=str, required=True)
     parser.add_argument("--print_transcript", action='store_true', required=False)
-    parser.add_argument("--print_qa", action='store_true', required=False)
-    parser.add_argument("--print_summary", action='store_true', required=False)
     parser.add_argument("--model_name", default="774M", type=str, required=False)
     args = parser.parse_args()
+    print("Arguments: {}".format(args))
 
     print("Loading SNOMED terms...")
     snomed_terms = snomed.load_snomed_terms(args.terms_folder)
@@ -172,9 +171,12 @@ if __name__ == "__main__":
 
     note = {category: [] for category in CATEGORIES}
     
+    # Init summarization model
+    print("Initializing summarization model...")
+    generate_summary.init_model(model_name=args.model_name)
+
     # Build Q&A pairs
     print("Building summary...")
-    generate_summary.init_model(model_name=args.model_name, terms_folder=args.terms_folder)
     first = True
     pmh_mentioned = False
     for turn in transcript:
@@ -184,35 +186,25 @@ if __name__ == "__main__":
             response = qa_label['response']
             question_list_format = find_list_format_slice_with_label_id(transcript, qa_label['question_label_id'])
             response_list_format = find_list_format_slice_with_label_id(transcript, qa_label['label_id'])
-            qa_is_important_ = qa_is_important(question_list_format, response_list_format)
-            qa_summary = None
-            if qa_is_important_:
-                qa_summary = summarize_qa(question, response)
-                category = determine_category_of_qa(question_list_format, response_list_format, first, pmh_mentioned)
-                note[category].append(qa_summary['summary'])
-                first = False
-                if category == PMH:
-                    pmh_mentioned = True
-            if args.print_qa:
-                print("Question: {}".format(question))
-                print("Response: {}".format(response))
-                if qa_is_important_:
-                    print("QA is important")
-                    print("Summary: {}".format(qa_summary['summary']))
-                    print("Category: {} | Context Category: {}".format(category, qa_summary['context_category']))
-                else:
-                    print("QA not important")
-                print()
+            qa_summary = summarize_qa(question, response)
+            category = determine_category_of_qa(question_list_format, response_list_format, first, pmh_mentioned)
+            note[category].append(qa_summary)
+            first = False
+            if category == PMH:
+                pmh_mentioned = True
+            print("Question: {}".format(question))
+            print("Response: {}".format(response))
+            print("Summary: {}".format(qa_summary))
+            print()
     print()
 
     # Print summary
-    if args.print_summary:
-        for category in CATEGORIES:
-            print(category.upper())
-            for sentence in note[category]:
-                print("- {}".format(sentence))
-            if len(note[category]) == 0:
-                print("None")
-            else:
-                print()
+    for category in CATEGORIES:
+        print(category.upper())
+        for sentence in note[category]:
+            print("- {}".format(sentence))
+        if len(note[category]) == 0:
+            print("None")
+        else:
             print()
+        print()

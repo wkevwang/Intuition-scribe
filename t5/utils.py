@@ -41,10 +41,10 @@ def get_checkpoint_file_path(model_name, checkpoints_dir):
     Returns the full path where model should be saved.
     E.g. /home/kevin/scribe/checkpoints/model-5.pt
 
-    The checkpoints_dir is created in the current working directory.
+    The checkpoints_dir is created in the directory of this script.
     """
-    current_working_directory = os.getcwd()
-    checkpoints_dir_full = os.path.join(current_working_directory, checkpoints_dir)
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    checkpoints_dir_full = os.path.join(script_dir, checkpoints_dir)
     model_file_name = model_name + '.pt'
     checkpoint_file_path = os.path.join(checkpoints_dir_full, model_file_name)
     return checkpoint_file_path
