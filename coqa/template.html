@@ -1,0 +1,98 @@
+<!-- You must include this JavaScript file -->
+<script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
+
+<!-- For the full list of available Crowd HTML Elements and their input/output documentation,
+      please refer to https://docs.aws.amazon.com/sagemaker/latest/dg/sms-ui-template-reference.html -->
+
+<!-- You must include crowd-form so that your task submits answers to MTurk -->
+<crowd-form answer-format="flatten-objects">
+
+    <crowd-instructions link-text="View instructions" link-type="button">
+        <short-summary>
+            <p>Summarize the question-answer pair</p>
+        </short-summary>
+
+        <detailed-instructions>
+            <h3>Summarize the question-answer pair</h3>
+            <p>
+                Given a question and its answer, write a one-sentence summary that contains the information from the question and answer. All the important details from the question and answer should be retained in the summary.
+            </p>
+            <p>
+                The summary should be properly formatted with capitalization and periods. For questions with a Yes/No answer, do not begin the summary with Yes/No - just write the summary. Please use correct grammar in the summary.
+            </p>
+        </detailed-instructions>
+
+        <positive-example>
+            <h3>Question</h3>
+            <p>What are the benefits mentioned?</p>
+
+            <h3>Answer</h3>
+            <p>Reduced mortality, pain reduction, and improved cardiac function.</p>
+
+            <h3>Summary</h3>
+            <p>The benefits are reduced mortality, pain reduction, and improved cardiac function.</p>
+        </positive-example>
+
+        <positive-example>
+            <h3>Question</h3>
+            <p>What do artists who've succeeded often have to do?</p>
+
+            <h3>Answer</h3>
+            <p>$50,000.</p>
+
+            <h3>Summary</h3>
+            <p>The judge set the bail at $50,000.</p>
+        </positive-example>
+
+        <positive-example>
+            <h3>Question</h3>
+            <p>Do we know where he went?</p>
+
+            <h3>Answer</h3>
+            <p>no</p>
+
+            <h3>Summary</h3>
+            <p>We don't know where he went.</p>
+        </positive-example>
+
+        <negative-example>
+            <h3>Question</h3>
+            <p>Where does their name come from?</p>
+
+            <h3>Answer</h3>
+            <p>Han dynasty</p>
+
+            <h3>Summary</h3>
+            <p>From Han dynasty. (Reason: Incomplete summary)</p>
+        </negative-example>
+
+        <negative-example>
+            <h3>Question</h3>
+            <p>Where were his studies done?</p>
+
+            <h3>Answer</h3>
+            <p>India</p>
+
+            <h3>Summary</h3>
+            <p>He done his studies in India. (Reason: wrong grammar. Should be "He did his studies in India")</p>
+        </negative-example>
+
+        <negative-example>
+            <h3>Question</h3>
+            <p>Do we know where he went?</p>
+
+            <h3>Answer</h3>
+            <p>no</p>
+
+            <h3>Summary</h3>
+            <p>No, we don't know where he went. (Reason: Don't include "Yes/No" at the beginning)</p>
+        </negative-example>
+    </crowd-instructions>
+
+    <p>Summarize the information in the question and answer:</p>
+
+    <p><strong>Question: </strong>${question}</p>
+    <p><strong>Answer: </strong>${answer}</p>
+
+    <crowd-input name="summary" placeholder="Write a one-sentence summary..." required></crowd-input>
+</crowd-form>

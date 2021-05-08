@@ -1,0 +1,107 @@
+<!-- You must include this JavaScript file -->
+<script src="https://assets.crowd.aws/crowd-html-elements.js"></script>
+
+<!-- For the full list of available Crowd HTML Elements and their input/output documentation,
+      please refer to https://docs.aws.amazon.com/sagemaker/latest/dg/sms-ui-template-reference.html -->
+
+<!-- You must include crowd-form so that your task submits answers to MTurk -->
+<crowd-form answer-format="flatten-objects">
+
+    <crowd-instructions link-text="View instructions" link-type="button">
+        <short-summary>
+            <p>Summarize the question-answer pair</p>
+        </short-summary>
+
+        <detailed-instructions>
+            <h3>Summarize the question-answer pair</h3>
+            <p>
+                Given a question and its answer, write a one-sentence summary that contains the information from the question and answer. All the important details from the question and answer should be retained in the summary. Use your best judgement to include what
+                information to keep and to leave out.
+            </p>
+            <p>
+                The summary should be properly formatted with capitalization and periods. Please use correct grammar in the summary.
+            </p>
+        </detailed-instructions>
+
+        <positive-example>
+            <h3>Question</h3>
+            <p>What did it establish itself as in the 70's and 80's?</p>
+
+            <h3>Answer</h3>
+            <p>As a major force in both English and European football</p>
+
+            <h3>Summary</h3>
+            <p>It established itself as a major force in English and European football in the 70's and 80's.</p>
+        </positive-example>
+
+        <positive-example>
+            <h3>Question</h3>
+            <p>What was the model for the first Joker image?</p>
+
+            <h3>Answer</h3>
+            <p>The joker card in a deck of playing cards</p>
+
+            <h3>Summary</h3>
+            <p>The first Joker was modelled off the joker card in a deck of playing cards.</p>
+        </positive-example>
+
+        <positive-example>
+            <h3>Question</h3>
+            <p>What do artists who've succeeded often have to do?</p>
+
+            <h3>Answer</h3>
+            <p>Navigate an often treacherous path between their own capacity to see and execute what lesser artists could not, while still appealing to powerful patrons who could finance their visions</p>
+
+            <h3>Summary</h3>
+            <p>Artists have to execute on their own visions while appealing to powerful patrons to finance them.
+            </p>
+            <p>(Here we do more summarizing in order to make the summary concise. Use your individual judgement to determine how much to summarize, but make sure the meaning of the summary is correct.)
+            </p>
+        </positive-example>
+
+        <negative-example>
+            <h3>Question</h3>
+            <p>What did it establish itself as in the 70's and 80's?</p>
+
+            <h3>Answer</h3>
+            <p>As a major force in both English and European football</p>
+
+            <h3>Summary</h3>
+            <p>It established itself as a major force in English and European football.</p>
+            <p>(Reason: Incomplete summary. Should include "70's and 80's")</p>
+        </negative-example>
+
+        <negative-example>
+            <h3>Question</h3>
+            <p>What was the model for the first Joker image?</p>
+
+            <h3>Answer</h3>
+            <p>The joker card in a deck of playing cards</p>
+
+            <h3>Summary</h3>
+            <p>The first Joker model off the joker card in a deck of playing cards.</p>
+            <p>(Reason: Incorrect grammar. Should be "was modelled off", not "model off")</p>
+        </negative-example>
+
+        <negative-example>
+            <h3>Question</h3>
+            <p>What do artists who've succeeded often have to do?</p>
+
+            <h3>Answer</h3>
+            <p>Navigate an often treacherous path between their own capacity to see and execute what lesser artists could not, while still appealing to powerful patrons who could finance their visions</p>
+
+            <h3>Summary</h3>
+            <p>Artists who've succeeded have to work hard.
+            </p>
+            <p>(Reason: Incorrect summary. Although the summary may be true, it does not summarize the information in the question and answer.)
+            </p>
+        </negative-example>
+    </crowd-instructions>
+
+    <p>Summarize the information in the question and answer:</p>
+
+    <p><strong>Question: </strong>${question}</p>
+    <p><strong>Answer: </strong>${answer}</p>
+
+    <crowd-input name="summary" placeholder="Write a one-sentence summary..." required></crowd-input>
+</crowd-form>

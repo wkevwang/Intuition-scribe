@@ -120,7 +120,7 @@ if __name__ == "__main__":
 
     print("Arguments: {}".format(args))
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = 'cpu' # torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using device: {}".format(device))
 
     train_dataset = QuestionAnswerSummaryDataset(
@@ -162,7 +162,7 @@ if __name__ == "__main__":
     elif args.optimizer == "AdamW":
         optimizer = AdamW(model.parameters())
     elif args.optimizer == "Adafactor":
-        optimizer = Adafactor(model.parameters(), lr=1e-3, relative_step=False, warmup_init=True)
+        optimizer = Adafactor(model.parameters(), lr=1e-3, scale_parameter=False, relative_step=False, warmup_init=False)
     else:
         raise ValueError("Invalid optimizer")
 

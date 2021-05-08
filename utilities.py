@@ -5,6 +5,8 @@ import pprint
 from colr import color
 from colorama import Fore, Style
 from constants import *
+import csv
+import os
 
 
 def capitalize(text):
@@ -184,3 +186,23 @@ def print_transcript(transcript, show_confidence=False):
             print_conf(item['content'], float(confidence), newline=False)
         print()
         print()
+
+
+def analyze_qa_data(qa_data_folder):
+    question_word_counts = []
+    answer_word_counts = []
+    summary_word_counts = []
+    for filename in os.listdir(qa_data_folder):
+        with open(os.path.join(qa_data_folder, filename), 'r') as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                  question_word_counts.append(len(row['Question'].split()))
+                  answer_word_counts.append(len(row['Answer'].split()))
+                  summary_word_counts.append(len(row['Summary'].split()))
+    print("Number of QA pairs: {}".format(len(question_word_counts)))
+    print("Average # words in Qs: {}".format(
+        round(sum(question_word_counts) / len(question_word_counts), 2)))
+    print("Average # words in As: {}".format(
+        round(sum(answer_word_counts) / len(answer_word_counts), 2)))
+    print("Average # words in Ss: {}".format(
+        round(sum(summary_word_counts) / len(summary_word_counts), 2)))
