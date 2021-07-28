@@ -3,11 +3,8 @@ Parses patient-doctor conversation and generates admission note
 """
 
 import argparse
-import os
 import json
 import regex as re
-from collections import OrderedDict
-import random
 
 from utilities import *
 from constants import *
@@ -41,9 +38,7 @@ def qa_is_important(question_list_format, response_list_format):
     return False
 
 
-def determine_category_of_qa(question_list_format, response_list_format, first, pmh_mentioned):
-    if first:
-        return CC
+def determine_category_of_qa(question_list_format, response_list_format, pmh_mentioned):
     if ((list_format_contains_type(question_list_format, "REGEX", "ALLERGIES_CATEGORY")) or
         (list_format_contains_type(response_list_format, "REGEX", "ALLERGIES_CATEGORY"))):
         return ALLERGIES
@@ -177,7 +172,6 @@ if __name__ == "__main__":
 
     # Build Q&A pairs
     print("Building summary...")
-    first = True
     pmh_mentioned = False
     for turn in transcript:
         qa_label = find_qa_label_in_list_format(turn['list_format'])
@@ -187,7 +181,7 @@ if __name__ == "__main__":
             question_list_format = find_list_format_slice_with_label_id(transcript, qa_label['question_label_id'])
             response_list_format = find_list_format_slice_with_label_id(transcript, qa_label['label_id'])
             qa_summary = summarize_qa(question, response)
-            category = determine_category_of_qa(question_list_format, response_list_format, first, pmh_mentioned)
+            category = determine_category_of_qa(question_list_format, response_list_format, pmh_mentioned)
             note[category].append(qa_summary)
             first = False
             if category == PMH:
@@ -197,6 +191,9 @@ if __name__ == "__main__":
             print("Summary: {}".format(qa_summary))
             print()
     print()
+
+    # Find CC (first SNOMED disorder or findings term mentioned in transcript)
+
 
     # Print summary
     for category in CATEGORIES:

@@ -17,7 +17,7 @@ COQA_TRAIN_DATA_URL = "http://downloads.cs.stanford.edu/nlp/data/coqa/coqa-train
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--count", type=int, required=False, default=1000)
+    parser.add_argument("--count", type=int, required=False, default=1000000)
     parser.add_argument("--data_folder", type=str, required=False, default='../data/coqa')
     args = parser.parse_args()
 
@@ -41,8 +41,8 @@ if __name__ == "__main__":
                 "answer": answer_data['input_text'],
             })
     
-    data = list(filter(lambda d: len(d['question'].split()) > 8, data))
-    data = list(filter(lambda d: len(d['answer'].split()) > 8, data))
+    data = list(filter(lambda d: len(d['question'].split()) > 3, data))
+    # data = list(filter(lambda d: len(d['answer'].split()) > 8, data))
     # data.sort(key=lambda d: len(d['answer']), reverse=True)
     random.shuffle(data)
     data = data[:args.count]

@@ -107,6 +107,7 @@ class QuestionAnswerSummaryDataset(Dataset):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model_name", type=str, default="model")
+    parser.add_argument("--use_cpu", action='store_true', default=False)
     parser.add_argument("--load_model", type=str, default=None)
     parser.add_argument("--checkpoints_dir", type=str, default="checkpoints")
     parser.add_argument("--qa_data", type=str, required=True)
@@ -120,7 +121,9 @@ if __name__ == "__main__":
 
     print("Arguments: {}".format(args))
 
-    device = 'cpu' # torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if args.use_cpu:
+        device = 'cpu'
     print("Using device: {}".format(device))
 
     train_dataset = QuestionAnswerSummaryDataset(

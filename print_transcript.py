@@ -1,3 +1,7 @@
+"""
+Prints transcript with probabilities
+"""
+
 import os
 import json
 import argparse

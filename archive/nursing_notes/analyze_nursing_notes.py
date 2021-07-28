@@ -9,7 +9,7 @@ from keywords import keywords
 import regex as re
 import sys
 
-sys.path.append('..')
+sys.path.append('../..')
 from utilities import *
 
 categories = [
@@ -92,7 +92,7 @@ def build_summary(note_for_day):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument("--terms_file", type=str, required=True)
+    parser.add_argument("--terms_file", type=str, required=True, help="Use SNOMED CT findings_and_disorders_terms.txt")
     parser.add_argument("--notes_file", type=str, required=True)
     args = parser.parse_args()
 

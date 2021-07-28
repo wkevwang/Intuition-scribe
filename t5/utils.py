@@ -23,8 +23,9 @@ def generate(model, input_, max_len=128, device='cpu'):
         early_stopping=True,
         num_return_sequences=1
     )
-    final_outputs = []
-    sentence = tokenizer.decode(beam_outputs[0])
+    # Crop out <pad> and </s> (first and last token)
+    final_output = beam_outputs[0][1:-1]
+    sentence = tokenizer.decode(final_output)
     return sentence
 
 

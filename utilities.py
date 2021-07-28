@@ -23,12 +23,20 @@ def to_date(string):
     string = string.replace(',', '').replace(':', '')
     date = None
     try:
+        # January 05 2355
         date = datetime.strptime(string, "%B %d %H%M")
     except ValueError:
         # Not a date
         pass
     try:
+        # Jan 05 2355
         date = datetime.strptime(string, "%b %d %H%M")
+    except ValueError:
+        # Not a date
+        pass
+    try:
+        # Jan 05 23 55
+        date = datetime.strptime(string, "%A %B %d %Y")
     except ValueError:
         # Not a date
         pass
