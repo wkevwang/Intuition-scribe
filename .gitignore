@@ -1,4 +1,4 @@
-.# Byte-compiled / optimized / DLL files
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
 *$py.class
@@ -15,3 +15,7 @@ gpt/models/
 .DS_Store
 *.docx
 *.json
+
+# Keys
+gc_key.json
+coqa/get_mturk_data.py
